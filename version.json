@@ -1,4 +1,4 @@
 {
   "machtech": { "version": "1.0.4", "note": "Báo có bản mới; sửa chờ robot dừng hẳn khi đo dao.", "url": "" },
-  "robot":    { "version": "1.0.4", "note": "Báo có bản mới; sửa chờ robot dừng hẳn khi đo dao.", "url": "" }
+  "robot":    { "version": "1.0.5", "note": "Chế độ hàn (T0) không vẽ dao và ổ dao trong 3D.", "url": "" }
 }
