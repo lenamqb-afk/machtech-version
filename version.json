@@ -1,4 +1,4 @@
 {
-  "machtech": { "version": "1.0.4", "note": "Báo có bản mới; sửa chờ robot dừng hẳn khi đo dao.", "url": "" },
-  "robot":    { "version": "1.0.6", "note": "Vẽ mỏ hàn MIG (cổ cong, béc) khi không lắp dao; chế độ hàn không vẽ giá dao.", "url": "" }
+  "machtech": { "version": "1.0.7", "note": "Báo có bản mới bằng hộp thông báo; sửa chờ máy dừng hẳn khi đo dao.", "url": "" },
+  "robot":    { "version": "1.0.7", "note": "Vẽ mỏ hàn MIG khi không lắp dao; báo bản mới bằng hộp thông báo.", "url": "" }
 }
