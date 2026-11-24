@@ -1293,7 +1293,7 @@ function moCaiDat() {
     '<label>Sao lưu dữ liệu</label><div class="row"><button class="btn gray" onclick="saoLuu()">💾 Lưu ra file</button><button class="btn gray" onclick="document.getElementById(\'fileKP\').click()">📂 Khôi phục</button></div><input type="file" id="fileKP" accept=".json,application/json" style="display:none" onchange="khoiPhuc(this.files[0])">' +
     '<h2 style="margin-top:22px">☁️ Đồng bộ nhiều máy (Google, miễn phí)</h2><p class="muted" style="margin-top:-6px;font-size:14px">Dán địa chỉ máy chủ Google Apps Script (xem hướng dẫn). Mọi iPhone dùng cùng địa chỉ + mã bí mật sẽ thấy cùng dữ liệu.</p>' +
     '<label>Địa chỉ máy chủ</label><input id="cdMay" value="' + esc(db.cfg.mayChu) + '" placeholder="https://script.google.com/macros/s/.../exec">' +
-    '<label>Mã bí mật</label><input id="cdKhoa" value="' + esc(db.cfg.khoa) + '" placeholder="giống mã trong Code.gs">' +
+    '<label>Mã bí mật</label><div style="position:relative"><input id="cdKhoa" type="password" autocomplete="off" value="' + esc(db.cfg.khoa) + '" placeholder="giống mã trong Code.gs" style="padding-right:52px"><button type="button" onclick="var e=document.getElementById(\'cdKhoa\');e.type=e.type===\'password\'?\'text\':\'password\';this.textContent=e.type===\'password\'?\'👁️\':\'🙈\'" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:none;font-size:22px;padding:6px">👁️</button></div>' +
     (NATIVE ? '<p style="text-align:center;margin:14px 0 0"><button class="btn gray" onclick="if(confirm(\'Chuyển máy này sang chế độ nhân viên? Dữ liệu quản lý vẫn giữ trong máy.\'))doiVaiTro()">👷 Dùng máy này cho nhân viên</button></p>' : '') +
     '<div class="btns"><button class="btn gray" onclick="dongSheet()">Đóng</button><button class="btn p" id="cdLuu">Lưu & đồng bộ</button></div>');
   document.getElementById('cdLuu').onclick = function () {
@@ -1658,7 +1658,7 @@ var KHOA = (function () {
 })();
 
 /* ======================= THÔNG TIN PHẦN MỀM ======================= */
-var PHIEN_BAN = '1.0.10', NGAY_PB = '24/11/2026', HOTLINE = '0911337373';
+var PHIEN_BAN = '1.0.11', NGAY_PB = '24/11/2026', HOTLINE = '0911337373';
 function moThongTin() {
   var la = VAI === 'nv', kb = 0;
   try { kb = ((lsGet(KEY) || '').length / 1024).toFixed(1).replace('.', ','); } catch (e) {}
