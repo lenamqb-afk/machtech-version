@@ -1,4 +1,4 @@
 {
   "machtech": { "version": "1.0.7", "note": "Báo có bản mới bằng hộp thông báo; sửa chờ máy dừng hẳn khi đo dao.", "url": "" },
-  "robot":    { "version": "1.0.10", "note": "Cổ mỏ hàn cong một chỗ như mỏ thật.", "url": "" }
+  "robot":    { "version": "1.0.12", "note": "Tay dạy iPhone vẽ mỏ hàn / dao giống máy tính.", "url": "" }
 }
