@@ -17,9 +17,18 @@ App chạy trên Safari của iPhone, thêm ra màn hình chính như một app 
 - **Chạy không cần mạng**. Dữ liệu lưu trên iPhone; có **Sao lưu ra file / Khôi phục**.
 - **Đồng bộ nhiều máy** (tùy chọn) qua Google Drive của anh, miễn phí.
 
-## 2. Nhân viên tự chấm công bằng điện thoại (theo toạ độ)
+## 2. Thu chi, tạm ứng vật tư, tiến độ công trình
 
-Phần này cần máy chủ Google ở mục 5 (làm 1 lần, miễn phí).
+Trong mỗi công trình (⚙️ để nhập khách hàng, giá trị hợp đồng, ngày bắt đầu, ngày xong dự kiến):
+
+- **Thu chi**: *Thu tiền* (chủ nhà trả các đợt), *Chi tiền* (vật tư, thuê máy, vận chuyển, ăn uống, khác; ghi nhà cung cấp). App tự tính: đã thu, còn phải thu, chi vật tư, chi khác, **tiền công thợ** (lấy từ chấm công), tổng chi phí, **lãi tạm tính** (đã thu − chi) và **lãi dự kiến** (hợp đồng − chi).
+- **Tạm ứng mua vật tư**: ứng tiền cho thợ hoặc người khác. Khi họ mua về, bấm *Quyết toán ứng* › *Khai chi VT* (chi trả bằng tiền ứng, không trừ quỹ 2 lần). Tiền thừa bấm *Hoàn tiền thừa*; chi vượt thì *Trả bù*. Mục **Tạm ứng vật tư đang giữ** cho biết ai đang cầm bao nhiêu.
+- **Tiến độ**: thêm hạng mục (ngày bắt đầu, xong dự kiến, tỷ trọng, người phụ trách), kéo % hoàn thành, mỗi lần cập nhật được lưu lịch sử. App tính % chung, báo hạng mục **trễ**, so với lịch (đúng tiến độ hay chậm), và so **% làm được với % đã thu, % đã chi** của hợp đồng (nhắc khi nên đòi tiền đợt tiếp hoặc khi chi vượt).
+- Trang chủ hiện thanh tiến độ, tiền thu/chi của từng công trình. Excel có thêm trang *Thu chi*, *Tạm ứng VT*, *Tiến độ*.
+
+## 3. Nhân viên tự chấm công bằng điện thoại (theo toạ độ)
+
+Phần này cần máy chủ Google ở mục 6 (làm 1 lần, miễn phí).
 
 **Anh làm trên máy quản lý:**
 1. Vào công trình › ⚙️ › **📍 Lấy vị trí tôi đang đứng** (đứng tại công trình), chọn **bán kính** (mặc định 150 m) và số giờ tính 1/2 công (mặc định làm dưới 5 giờ = 1/2 công) › Lưu.
@@ -39,11 +48,11 @@ Phần này cần máy chủ Google ở mục 5 (làm 1 lần, miễn phí).
 
 Lưu ý: GPS điện thoại có thể bị phần mềm giả vị trí đánh lừa; app ghi lại toạ độ và sai số từng lần chấm để anh kiểm tra trên bản đồ.
 
-## 3. Đưa app lên mạng (làm 1 lần)
+## 4. Đưa app lên mạng (làm 1 lần)
 
 App là các file trong thư mục `app/` (index.html, manifest.json, sw.js, icon-*.png). Cần đặt lên một trang web có **https**. Cách miễn phí: GitHub Pages hoặc Netlify Drop (kéo thả thư mục `app` vào https://app.netlify.com/drop).
 
-## 4. Cài trên iPhone
+## 5. Cài trên iPhone
 
 1. Mở địa chỉ app bằng **Safari**.
 2. Bấm nút **Chia sẻ** (ô vuông có mũi tên lên) › **Thêm vào MH chính** › Thêm.
@@ -51,7 +60,7 @@ App là các file trong thư mục `app/` (index.html, manifest.json, sw.js, ico
 
 Lưu ý: nên luôn mở từ biểu tượng ngoài màn hình chính. iPhone giữ dữ liệu của app ngoài màn hình chính lâu dài; nếu chỉ mở trong tab Safari mà lâu không dùng, iOS có thể tự xóa dữ liệu.
 
-## 5. Máy chủ Google (cần cho nhân viên tự chấm và đồng bộ nhiều máy)
+## 6. Máy chủ Google (cần cho nhân viên tự chấm và đồng bộ nhiều máy)
 
 Cần khi nhân viên tự chấm trên máy họ, hoặc anh dùng 2 máy quản lý. Dữ liệu nằm trong Google Drive của anh.
 
@@ -63,7 +72,7 @@ Cần khi nhân viên tự chấm trên máy họ, hoặc anh dùng 2 máy quả
 
 Dữ liệu nằm trong file `cham-cong-du-lieu.json` ở Google Drive của anh, mỗi ngày có thêm 1 bản sao lưu trong thư mục `cham-cong-sao-luu`.
 
-## 6. Ký hiệu
+## 7. Ký hiệu
 
 | Màu | Ý nghĩa | Tính công |
 |---|---|---|

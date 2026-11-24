@@ -131,7 +131,9 @@ function ghi_(d) {
 }
 /** Gộp: bản ghi nào sửa sau cùng (upd lớn hơn) thì thắng. */
 function gop_(a, b) {
-  ['nhom', 'nv', 'gd', 'cc'].forEach(function (k) {
+  // Gộp mọi danh sách (nhom, nv, gd, cc, tc, hm, và các mục thêm sau này)
+  Object.keys(b).forEach(function (k) { if (Array.isArray(b[k]) && !Array.isArray(a[k])) a[k] = []; });
+  Object.keys(a).filter(function (k) { return Array.isArray(a[k]); }).forEach(function (k) {
     var m = {};
     (a[k] || []).forEach(function (x) { m[x.id] = x; });
     (b[k] || []).forEach(function (x) { if (!m[x.id] || (x.upd || 0) > (m[x.id].upd || 0)) m[x.id] = x; });

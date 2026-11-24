@@ -1,5 +1,5 @@
 // Bộ nhớ đệm để app mở được khi mất mạng. Đổi số phiên bản khi cập nhật app.
-var CACHE = 'chamcong-v3';
+var CACHE = 'chamcong-v4';
 var FILES = ['./index.html', './manifest.json', './icon-180.png', './icon-192.png',
   'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'];
 self.addEventListener('install', function (e) {
