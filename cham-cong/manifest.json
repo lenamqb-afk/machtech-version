@@ -1,7 +1,7 @@
 {
   "name": "Chấm công",
   "short_name": "Chấm công",
-  "start_url": "./",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "background_color": "#eef3f7",
