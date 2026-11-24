@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
-<title>Chấm công</title>
+<title>Chấm Công MachTech</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -289,7 +289,7 @@ function veHome() {
     tong += con;
     return '<button class="grp" onclick="di(\'nhom/' + g.id + '\')"><div class="av" style="background:var(--blue)">' + esc(g.ten.trim()[0] || '?').toUpperCase() + '</div><div class="t"><b>' + esc(g.ten) + '</b><small>' + ds.length + ' nhân viên · đã chấm hôm nay ' + daCham + '/' + ds.length + '</small>' + (function () { var r = tinhCT(g); if (r.td === null && !r.hopDong && !r.thu && !r.tongChi) return ''; return (r.td !== null ? '<div style="margin-top:6px">' + thanhTD(r.td, 'var(--blue)') + '</div>' : '') + '<small>' + (r.td !== null ? 'Tiến độ ' + Math.round(r.td) + '% · ' : '') + 'Thu ' + tienGon(r.thu) + (r.hopDong ? '/' + tienGon(r.hopDong) : '') + ' · Chi ' + tienGon(r.tongChi) + (r.dangGiu > 0 ? ' · ứng VT ' + tienGon(r.dangGiu) : '') + '</small>'; })() + '</div><span class="muted">›</span></button>';
   });
-  $app('<div class="hdr"><h1>Chấm công</h1>' + (KHOA.coKhoa() ? '<button class="ic" title="Khóa ngay" onclick="KHOA.khoaNgay()">🔒</button>' : '') + '<button class="ic" onclick="moCaiDat()">⚙️</button></div>' +
+  $app('<div class="hdr"><h1>Chấm công</h1><button class="ic" title="Thông tin phần mềm" onclick="moThongTin()">ⓘ</button>' + (KHOA.coKhoa() ? '<button class="ic" title="Khóa ngay" onclick="KHOA.khoaNgay()">🔒</button>' : '') + '<button class="ic" onclick="moCaiDat()">⚙️</button></div>' +
     '<div class="card"><div class="pad"><span class="muted">Tổng chưa thanh toán</span><div style="display:flex;align-items:center;gap:10px;margin-top:6px"><b class="green" style="font-size:26px">' + tienAn(tong) + '</b>' + nutMat() + '</div></div></div>' +
     '<div class="sec"><h3>CÔNG TRÌNH / NHÓM</h3></div>' +
     '<div class="card list">' + (items.length ? items.join('<div class="dash"></div>') : '<div class="empty">Chưa có nhóm nào.<br>Bấm <b>＋</b> để tạo nhóm đầu tiên (VD: “Lắp Máy Sấy”).</div>') + '</div>' +
@@ -844,6 +844,7 @@ function tamNgung(id) { var n = timNV(id); n.tamNgung = !n.tamNgung; n.upd = now
 /* ---------- Cài đặt, sao lưu, đồng bộ ---------- */
 function moCaiDat() {
   sheet('<h2>⚙️ Cài đặt</h2>' +
+    '<button class="btn gray" style="width:100%;margin-bottom:10px" onclick="dongSheet();moThongTin()">ⓘ Thông tin phần mềm, hỗ trợ</button>' +
     '<button class="btn ' + (KHOA.coKhoa() ? 'gray' : 'p') + '" style="width:100%" onclick="dongSheet();KHOA.caiDat()">🔒 Mật khẩu mở app: ' + (KHOA.coKhoa() ? 'đang bật' : 'chưa đặt') + '</button>' +
     '<label>Sao lưu dữ liệu</label><div class="row"><button class="btn gray" onclick="saoLuu()">💾 Lưu ra file</button><button class="btn gray" onclick="document.getElementById(\'fileKP\').click()">📂 Khôi phục</button></div><input type="file" id="fileKP" accept=".json,application/json" style="display:none" onchange="khoiPhuc(this.files[0])">' +
     '<h2 style="margin-top:22px">☁️ Đồng bộ nhiều máy (Google, miễn phí)</h2><p class="muted" style="margin-top:-6px;font-size:14px">Dán địa chỉ máy chủ Google Apps Script (xem hướng dẫn). Mọi iPhone dùng cùng địa chỉ + mã bí mật sẽ thấy cùng dữ liệu.</p>' +
@@ -1099,6 +1100,7 @@ var NV = (function () {
   function menu() {
     sheet('<h2>' + esc(phien.nv.ten) + '</h2><p class="muted">Mã ' + esc(phien.ma) + (phien.nv.nhom ? ' · ' + esc(phien.nv.nhom) : '') + (coToaDo(phien.nv) ? '<br>Bán kính chấm công: ' + phien.nv.banKinh + ' m' : '') + '</p>' +
       '<button class="btn gray" style="width:100%" onclick="dongSheet();NV.lamMoi()">🔄 Làm mới</button>' +
+      '<button class="btn gray" style="width:100%;margin-top:10px" onclick="dongSheet();moThongTin()">ⓘ Thông tin phần mềm, hỗ trợ</button>' +
       '<button class="btn red" style="width:100%;margin-top:10px" id="dxOk">Đăng xuất</button>');
     document.getElementById('dxOk').onclick = function () {
       if (cho().length) { this.textContent = 'Còn ' + cho().length + ' lần chấm chưa gửi, hãy bật mạng trước'; return; }
@@ -1189,6 +1191,34 @@ var KHOA = (function () {
   }
   return { khoa: khoa, coKhoa: coKhoa, caiDat: caiDat, khoaNgay: function () { khoa(function () { ve(); }); } };
 })();
+
+/* ======================= THÔNG TIN PHẦN MỀM ======================= */
+var PHIEN_BAN = '1.0.0', NGAY_PB = '24/11/2026', HOTLINE = '0911337373';
+function moThongTin() {
+  var la = VAI === 'nv', kb = 0;
+  try { kb = ((lsGet(KEY) || '').length / 1024).toFixed(1).replace('.', ','); } catch (e) {}
+  var dem = function (a) { return (a || []).filter(function (x) { return !x.xoa; }).length; };
+  var dong = function (t, v) { return '<div style="display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:15px"><span class="muted" style="white-space:nowrap">' + t + '</span><b style="font-weight:500;text-align:right">' + v + '</b></div>'; };
+  var cheDo = window.matchMedia && matchMedia('(display-mode: standalone)').matches || navigator.standalone ? 'Đã cài ra màn hình chính ✓' : '<span style="color:#e65100">Đang mở trong trình duyệt</span>';
+  sheet('<div style="text-align:center"><img src="icon-192.png" alt="" style="width:76px;height:76px;border-radius:18px;box-shadow:0 4px 12px #0002"><h2 style="margin:10px 0 2px">Chấm Công MachTech</h2>' +
+    '<div class="muted">Phiên bản ' + PHIEN_BAN + ' · ' + NGAY_PB + '</div></div>' +
+    '<p style="font-size:15px;margin:14px 0">Chấm công, tính lương theo ngày công, tạm ứng, thanh toán, thu chi và tiến độ công trình. Nhân viên tự chấm bằng GPS tại công trình.</p>' +
+    '<div class="sec" style="margin:4px 0"><h3>HỖ TRỢ</h3></div>' +
+    '<div style="background:#f7f8fb;border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px"><div style="flex:1"><div class="muted" style="font-size:14px">Hotline / Zalo</div><b style="font-size:22px;letter-spacing:.5px;user-select:all">' + HOTLINE + '</b></div>' +
+    '<a class="btn g" style="flex:none;text-decoration:none;padding:10px 14px" href="tel:' + HOTLINE + '">📞 Gọi</a><a class="btn b" style="flex:none;text-decoration:none;padding:10px 14px" href="https://zalo.me/' + HOTLINE + '" target="_blank" rel="noopener">Zalo</a></div>' +
+    '<div class="sec" style="margin:14px 0 4px"><h3>MÁY NÀY</h3></div><div>' +
+    dong('Chế độ', la ? 'Nhân viên' : 'Quản lý') +
+    dong('Cài đặt', cheDo) +
+    (la ? dong('Máy chủ', lsGet('cc_nv_may') ? 'Đã kết nối' : 'Chưa có') :
+      dong('Dữ liệu', dem(db.nhom) + ' công trình · ' + dem(db.nv) + ' nhân viên · ' + dem(db.gd) + ' giao dịch lương · ' + dem(db.tc) + ' thu chi · ' + dem(db.cc) + ' lần NV tự chấm') +
+      dong('Dung lượng', kb + ' KB') +
+      dong('Đồng bộ Google', db.cfg.mayChu ? (db.cfg.dongBoLuc ? 'Lần cuối ' + new Date(db.cfg.dongBoLuc).toLocaleString('vi-VN') : 'Đã cài, chưa đồng bộ') : '<span style="color:#e65100">Chưa cài (chỉ lưu trên máy)</span>') +
+      dong('Mật khẩu mở app', KHOA.coKhoa() ? 'Đang bật ✓' : 'Chưa đặt')) +
+    dong('Mạng', navigator.onLine === false ? '<span class="red">Đang mất mạng</span>' : 'Có mạng') + '</div>' +
+    (la ? '' : '<p class="muted" style="font-size:13px">Dữ liệu lưu trong máy này' + (db.cfg.mayChu ? ' và trong Google Drive của anh' : '') + '. Nên vào ⚙️ › Lưu ra file để sao lưu định kỳ.</p>') +
+    '<p class="muted" style="font-size:12px;text-align:center;margin:16px 0 0">© 2026 MachTech · Lịch âm theo thuật toán Hồ Ngọc Đức · Xuất Excel bằng SheetJS</p>' +
+    '<div class="btns"><button class="btn gray" onclick="dongSheet()">Đóng</button></div>');
+}
 
 /* ======================= KHỞI ĐỘNG ======================= */
 var Q = new URLSearchParams(location.search);
