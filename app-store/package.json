@@ -2,7 +2,7 @@
   "name": "cham-cong-machtech",
   "version": "1.0.2",
   "private": true,
-  "description": "Chấm Công MachTech - bản app iOS/Android (Capacitor) bọc thư mục ../cham-cong",
+  "description": "Chấm Công Tính Lương - bản app iOS/Android (Capacitor) bọc thư mục ../cham-cong",
   "scripts": {
     "www": "node scripts/build-www.js",
     "sync": "npm run www && npx cap sync",

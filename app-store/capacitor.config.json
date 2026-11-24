@@ -1,6 +1,6 @@
 {
   "appId": "vn.machtech.chamcong",
-  "appName": "Chấm Công MachTech",
+  "appName": "Chấm Công Tính Lương",
   "webDir": "www",
   "ios": { "contentInset": "never", "backgroundColor": "#eef3f7", "limitsNavigationsToAppBoundDomains": false },
   "android": { "backgroundColor": "#eef3f7" },

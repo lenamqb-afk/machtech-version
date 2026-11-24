@@ -1,4 +1,4 @@
-# Chấm Công MachTech – bản App Store / Google Play
+# Chấm Công Tính Lương – bản App Store / Google Play
 
 Thư mục này đóng gói web app `../cham-cong` thành app iOS và Android bằng Capacitor 8.
 Sửa giao diện/tính năng ở `../cham-cong/index.html`; app gốc tự lấy bản mới khi build.
@@ -17,8 +17,9 @@ Khác biệt khi chạy trong app gốc (biến `NATIVE` trong index.html):
 
 | Mục | Nội dung |
 |---|---|
-| Tên app | Chấm Công MachTech |
-| Phụ đề (≤30 ký tự) | Chấm công, tính lương thợ |
+| Tên app (≤30 ký tự) | Chấm Công Tính Lương (nếu Apple báo trùng tên: Chấm Công Tính Lương MachTech) |
+| Tên dưới biểu tượng | Chấm Công |
+| Phụ đề (≤30 ký tự) | Bảng công, lương thợ, công trình |
 | Danh mục | Kinh doanh (Business), phụ: Năng suất |
 | Độ tuổi | 4+ |
 | Giá | Miễn phí |
@@ -31,7 +32,7 @@ Khác biệt khi chạy trong app gốc (biến `NATIVE` trong index.html):
 
 **Mô tả:**
 
-> Chấm Công MachTech giúp chủ xưởng, chủ thầu công trình chấm công và tính lương thợ ngay trên điện thoại, dùng được cả khi không có mạng.
+> Chấm Công Tính Lương giúp chủ xưởng, chủ thầu công trình chấm công và tính lương thợ ngay trên điện thoại, dùng được cả khi không có mạng.
 >
 > • Chấm công nhanh: 1 công, 1/2 công, nghỉ có lý do, không lý do, nghỉ có lương. Chấm cả nhóm một lần.
 > • Lịch tháng có ngày âm lịch.

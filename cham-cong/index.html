@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
-<title>Chấm Công MachTech</title>
+<title>Chấm Công Tính Lương</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Chấm công">
+<meta name="apple-mobile-web-app-title" content="Chấm Công">
 <meta name="theme-color" content="#eef3f7">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
@@ -1237,14 +1237,14 @@ var KHOA = (function () {
 })();
 
 /* ======================= THÔNG TIN PHẦN MỀM ======================= */
-var PHIEN_BAN = '1.0.2', NGAY_PB = '24/11/2026', HOTLINE = '0911337373';
+var PHIEN_BAN = '1.0.3', NGAY_PB = '24/11/2026', HOTLINE = '0911337373';
 function moThongTin() {
   var la = VAI === 'nv', kb = 0;
   try { kb = ((lsGet(KEY) || '').length / 1024).toFixed(1).replace('.', ','); } catch (e) {}
   var dem = function (a) { return (a || []).filter(function (x) { return !x.xoa; }).length; };
   var dong = function (t, v) { return '<div style="display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:15px"><span class="muted" style="white-space:nowrap">' + t + '</span><b style="font-weight:500;text-align:right">' + v + '</b></div>'; };
   var cheDo = window.matchMedia && matchMedia('(display-mode: standalone)').matches || navigator.standalone ? 'Đã cài ra màn hình chính ✓' : '<span style="color:#e65100">Đang mở trong trình duyệt</span>';
-  sheet('<div style="text-align:center"><img src="icon-192.png" alt="" style="width:76px;height:76px;border-radius:18px;box-shadow:0 4px 12px #0002"><h2 style="margin:10px 0 2px">Chấm Công MachTech</h2>' +
+  sheet('<div style="text-align:center"><img src="icon-192.png" alt="" style="width:76px;height:76px;border-radius:18px;box-shadow:0 4px 12px #0002"><h2 style="margin:10px 0 2px">Chấm Công Tính Lương</h2>' +
     '<div class="muted">Phiên bản ' + PHIEN_BAN + ' · ' + NGAY_PB + '</div></div>' +
     '<p style="font-size:15px;margin:14px 0">Chấm công, tính lương theo ngày công, tạm ứng, thanh toán, thu chi và tiến độ công trình. Nhân viên tự chấm bằng GPS tại công trình.</p>' +
     '<div class="sec" style="margin:4px 0"><h3>HỖ TRỢ</h3></div>' +
@@ -1267,7 +1267,7 @@ function moThongTin() {
 
 /* Màn hình chọn vai trò khi mở app App Store lần đầu */
 function chonVaiTro() {
-  document.getElementById('app').innerHTML = '<div class="hdr"><h1>Chấm Công MachTech</h1></div>' +
+  document.getElementById('app').innerHTML = '<div class="hdr"><h1>Chấm Công Tính Lương</h1></div>' +
     '<div class="card pad" style="text-align:center"><p style="font-size:17px;margin-top:4px">Anh/chị dùng app với vai trò nào?</p>' +
     '<button class="btn p" style="width:100%;padding:18px 0;font-size:19px" onclick="datVaiTro(\'ql\')">👔 Chủ / quản lý<br><small style="font-weight:400">Chấm công, tính lương, thu chi công trình</small></button>' +
     '<button class="btn g" style="width:100%;padding:18px 0;font-size:19px;margin-top:12px" onclick="datVaiTro(\'nv\')">👷 Nhân viên<br><small style="font-weight:400">Tự chấm vào ca / ra ca tại công trình</small></button>' +
