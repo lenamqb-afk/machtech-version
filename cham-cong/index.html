@@ -157,7 +157,7 @@ function lsSet(k, v) { try { localStorage.setItem(k, v); return true; } catch (e
 var NATIVE = !!(window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform());
 var WEB_URL = 'https://raw.githack.com/lenamqb-afk/machtech-version/cham-cong/cham-cong/index.html';
 var CP = {};
-if (NATIVE && window.capacitorExports) ['Geolocation', 'Share', 'Filesystem', 'LocalNotifications'].forEach(function (n) { CP[n] = capacitorExports.registerPlugin(n); });
+if (NATIVE && window.capacitorExports) ['Geolocation', 'Share', 'Filesystem', 'LocalNotifications', 'NativePurchases'].forEach(function (n) { CP[n] = capacitorExports.registerPlugin(n); });
 /* Định vị: trong app dùng GPS gốc của máy, trên web dùng trình duyệt */
 var GEO = !NATIVE ? navigator.geolocation : {
   getCurrentPosition: function (ok, loi, o) {
@@ -843,6 +843,7 @@ function guiNV(id) {
   chiaSe(txt, 'Đã copy, dán vào Zalo gửi nhân viên');
 }
 function suaNV(id, nhomId) {
+  if (!id && !BQ.choThemNV()) return BQ.moMua('Bản miễn phí quản lý tối đa ' + BQ.MIEN_PHI + ' nhân viên.');
   var n = id ? timNV(id) : null;
   sheet('<h2>' + (n ? 'Thông tin nhân viên' : 'Thêm nhân viên') + '</h2>' +
     '<label>Họ tên</label><input id="nvTen" value="' + esc(n ? n.ten : '') + '">' +
@@ -878,6 +879,7 @@ function tamNgung(id) { var n = timNV(id); n.tamNgung = !n.tamNgung; n.upd = now
 function moCaiDat() {
   sheet('<h2>⚙️ Cài đặt</h2>' +
     '<button class="btn gray" style="width:100%;margin-bottom:10px" onclick="dongSheet();moThongTin()">ⓘ Thông tin phần mềm, hỗ trợ</button>' +
+    (NATIVE ? '<button class="btn ' + (BQ.daMua() ? 'gray' : 'p') + '" style="width:100%;margin-bottom:10px" onclick="dongSheet();BQ.moMua()">⭐ ' + BQ.nhan() + '</button>' : '') +
     '<button class="btn gray" style="width:100%;margin-bottom:10px" onclick="dongSheet();NHAC.moCaiDat()">🔔 Nhắc chấm công hằng ngày: ' + NHAC.nhan() + '</button>' +
     '<button class="btn ' + (KHOA.coKhoa() ? 'gray' : 'p') + '" style="width:100%" onclick="dongSheet();KHOA.caiDat()">🔒 Mật khẩu mở app: ' + (KHOA.coKhoa() ? 'đang bật' : 'chưa đặt') + '</button>' +
     '<label>Sao lưu dữ liệu</label><div class="row"><button class="btn gray" onclick="saoLuu()">💾 Lưu ra file</button><button class="btn gray" onclick="document.getElementById(\'fileKP\').click()">📂 Khôi phục</button></div><input type="file" id="fileKP" accept=".json,application/json" style="display:none" onchange="khoiPhuc(this.files[0])">' +
@@ -1245,7 +1247,7 @@ var KHOA = (function () {
 })();
 
 /* ======================= THÔNG TIN PHẦN MỀM ======================= */
-var PHIEN_BAN = '1.0.4', NGAY_PB = '24/11/2026', HOTLINE = '0911337373';
+var PHIEN_BAN = '1.0.5', NGAY_PB = '24/11/2026', HOTLINE = '0911337373';
 function moThongTin() {
   var la = VAI === 'nv', kb = 0;
   try { kb = ((lsGet(KEY) || '').length / 1024).toFixed(1).replace('.', ','); } catch (e) {}
@@ -1273,6 +1275,66 @@ function moThongTin() {
     '<div class="btns"><button class="btn gray" onclick="dongSheet()">Đóng</button></div>');
 }
 
+
+/* ======================= BẢN QUYỀN (mua 1 lần trong app) ======================= */
+/* App tải miễn phí. Chế độ quản lý miễn phí tới MIEN_PHI nhân viên; mua 1 lần để không giới hạn.
+   Máy nhân viên luôn miễn phí. Bản web không giới hạn. */
+var BQ = (function () {
+  var SP = 'vn.machtech.chamcong.quanly', K = 'cc_banquyen', MIEN_PHI = 3, gia = '';
+  var NP = function () { return CP.NativePurchases; };
+  function daMua() { return !NATIVE || lsGet(K) === '1'; }
+  function soNV() { return db.nv.filter(function (n) { return !n.xoa && !n.tamNgung; }).length; }
+  function choThemNV() { return daMua() || soNV() < MIEN_PHI; }
+  function coGiaoDich(ds) { return (ds || []).some(function (t) { return t.productIdentifier === SP && (t.purchaseState === undefined || String(t.purchaseState) === '1' || t.purchaseState === 'PURCHASED'); }); }
+  function moKhoa() { lsSet(K, '1'); }
+  function kiemTra(imLang) {
+    if (!NATIVE || !NP()) return Promise.resolve(daMua());
+    return NP().getPurchases({ productType: 'inapp' }).then(function (r) {
+      if (coGiaoDich(r && r.purchases)) { moKhoa(); return true; } return daMua();
+    }, function () { return daMua(); });
+  }
+  function layGia() {
+    if (gia || !NATIVE || !NP()) return Promise.resolve(gia);
+    return NP().getProduct({ productIdentifier: SP, productType: 'inapp' }).then(function (r) { gia = (r && r.product && r.product.priceString) || ''; return gia; }, function () { return ''; });
+  }
+  function moMua(lyDo) {
+    var da = daMua();
+    sheet('<div style="text-align:center"><div style="font-size:46px">⭐</div><h2 style="margin:6px 0">' + (da ? 'Anh đang dùng bản đầy đủ' : 'Mở khoá bản đầy đủ') + '</h2>' +
+      (lyDo && !da ? '<p class="muted" style="margin-top:0">' + esc(lyDo) + '</p>' : '') + '</div>' +
+      '<div class="card pad" style="margin:12px 0;box-shadow:none;border:1px solid var(--line)">' +
+      ['Không giới hạn số nhân viên, số công trình', 'Tính lương, thanh toán, thu chi, tiến độ', 'Nhân viên tự chấm bằng GPS, đối chiếu', 'Xuất Excel, đồng bộ nhiều máy, nhắc chấm công', 'Trả <b>1 lần</b>, dùng mãi, không thu phí hằng tháng'].map(function (t) { return '<div style="padding:4px 0">✓ ' + t + '</div>'; }).join('') +
+      '</div>' +
+      (da ? '' : '<button class="btn p" id="bqMua" style="width:100%;padding:16px 0;font-size:18px">Mua bản đầy đủ <span id="bqGia"></span></button>') +
+      '<button class="btn gray" id="bqKP" style="width:100%;margin-top:10px">Khôi phục giao dịch đã mua</button>' +
+      '<p id="bqMsg" class="muted" style="font-size:14px;text-align:center"></p>' +
+      '<p class="muted" style="font-size:12px;text-align:center">Máy nhân viên luôn miễn phí. Đã mua trên 1 iPhone thì cài máy khác cùng Apple ID, bấm Khôi phục.</p>' +
+      '<div class="btns"><button class="btn gray" onclick="dongSheet()">Đóng</button></div>');
+    var $m = document.getElementById('bqMsg');
+    if (!da) layGia().then(function (g) { var e = document.getElementById('bqGia'); if (e && g) e.textContent = '· ' + g; });
+    var bMua = document.getElementById('bqMua');
+    if (bMua) bMua.onclick = function () {
+      if (!NATIVE || !NP()) return;
+      var b = this; b.disabled = true; $m.textContent = 'Đang kết nối App Store…';
+      NP().purchaseProduct({ productIdentifier: SP, productType: 'inapp', quantity: 1 }).then(function (t) {
+        moKhoa(); dongSheet(); toast('✓ Cảm ơn anh! Đã mở khoá bản đầy đủ'); ve();
+      }, function (e) {
+        b.disabled = false; var t = String(e && (e.message || e));
+        $m.innerHTML = /cancel/i.test(t) ? 'Đã huỷ mua.' : '<span class="red">Chưa mua được: ' + esc(t) + '</span>';
+      });
+    };
+    document.getElementById('bqKP').onclick = function () {
+      if (!NATIVE || !NP()) return;
+      var b = this; b.disabled = true; $m.textContent = 'Đang khôi phục…';
+      NP().restorePurchases().catch(function () {}).then(function () { return kiemTra(); }).then(function (ok) {
+        b.disabled = false;
+        if (ok) { dongSheet(); toast('✓ Đã khôi phục bản đầy đủ'); ve(); }
+        else $m.textContent = 'Apple ID này chưa mua bản đầy đủ.';
+      });
+    };
+  }
+  function nhan() { return daMua() ? 'Bản đầy đủ' : 'Miễn phí (tối đa ' + MIEN_PHI + ' NV)'; }
+  return { MIEN_PHI: MIEN_PHI, daMua: daMua, choThemNV: choThemNV, kiemTra: kiemTra, moMua: moMua, nhan: nhan };
+})();
 
 /* ======================= NHẮC CHẤM CÔNG HẰNG NGÀY ======================= */
 /* Thông báo trên máy (không cần mạng, không cần máy chủ). Lập lịch 14 ngày tới,
@@ -1385,6 +1447,7 @@ if (NATIVE && !lsGet('cc_vai')) chonVaiTro();
 else if (VAI === 'nv') NV.batDau();
 else {
   if (KHOA.coKhoa()) KHOA.khoa(function () { ve(); }); else ve();
+  if (NATIVE && !BQ.daMua()) BQ.kiemTra();
   if (db.cfg.mayChu) dongBo(true);
   // Máy quản lý: 1 phút lấy chấm công mới của nhân viên 1 lần
   setInterval(function () { if (db.cfg.mayChu && document.visibilityState === 'visible' && navigator.onLine !== false) dongBo(true); }, 60000);

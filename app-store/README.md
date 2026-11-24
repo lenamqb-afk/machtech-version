@@ -22,7 +22,8 @@ Khác biệt khi chạy trong app gốc (biến `NATIVE` trong index.html):
 | Phụ đề (≤30 ký tự) | Bảng công, lương thợ, công trình |
 | Danh mục | Kinh doanh (Business), phụ: Năng suất |
 | Độ tuổi | 4+ |
-| Giá | Miễn phí |
+| Giá tải | Miễn phí |
+| Mua trong app | Non-Consumable, Product ID `vn.machtech.chamcong.quanly`, tên "Bản đầy đủ" (mở khoá quản lý không giới hạn nhân viên; bản miễn phí tối đa 3 NV đang làm). Máy nhân viên luôn miễn phí. Có nút Khôi phục giao dịch. |
 | URL chính sách quyền riêng tư | https://raw.githack.com/lenamqb-afk/machtech-version/cham-cong/cham-cong/chinh-sach.html |
 | URL hỗ trợ | cùng link trên (có hotline) |
 | Quyền riêng tư (App Privacy) | **Data Not Collected** – nhà phát triển không thu thập dữ liệu; dữ liệu ở trong máy hoặc Google Drive của chính người dùng |
@@ -39,14 +40,17 @@ Khác biệt khi chạy trong app gốc (biến `NATIVE` trong index.html):
 > • Tính lương tự động: lương ngày × số công + tăng ca + phụ cấp − tạm ứng − trừ tiền. Thanh toán tự tính số còn phải trả, gửi bảng lương qua Zalo.
 > • Nhân viên tự chấm Vào ca / Ra ca bằng GPS tại công trình, quản lý đối chiếu trên máy mình.
 > • Quản lý công trình: thu tiền chủ nhà, chi vật tư, tạm ứng mua vật tư và quyết toán, tiến độ từng hạng mục, lãi tạm tính.
+> • Nhắc chấm công hằng ngày bằng thông báo, tự bỏ qua ngày đã chấm.
 > • Xuất Excel bảng công, bảng lương có cột ký nhận.
 > • Khoá app bằng mật khẩu. Sao lưu ra file, đồng bộ nhiều máy qua Google Drive của chính anh/chị.
 > • Không quảng cáo, không cần tài khoản.
+> • Tải miễn phí, quản lý tới 3 nhân viên. Mua bản đầy đủ 1 lần để không giới hạn. Máy nhân viên luôn miễn phí.
 
 **Ghi chú cho người duyệt (App Review Notes, tiếng Anh):**
 
 > The app works fully offline without an account. On first launch choose "Chủ / quản lý" (manager). Tap "+" to add a work group and employees, then tap "Chấm công" on an employee to record a work day; the Bảng tab shows payroll; Thu chi / Tiến độ tabs track project money and progress; "Xuất Excel" exports a spreadsheet via the share sheet.
 > The optional "Nhân viên" (employee) mode lets workers clock in/out with GPS against a server the business owner deploys in their own Google account. Demo employee link and credentials: (fill in before submitting).
+> In-app purchase: the free tier allows 3 active employees; adding a 4th opens the "Bản đầy đủ" purchase sheet (also ⚙️ › ⭐), which has Restore Purchases.
 > Location is requested only while in use, when clocking in/out or when the manager saves a site location.
 
 **Ảnh chụp màn hình:** cần ảnh iPhone 6.9" (1320×2868 hoặc 1290×2796). Có thể chụp từ máy anh hoặc để Claude tạo.
