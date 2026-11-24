@@ -16,11 +16,33 @@ App chạy trên Safari của iPhone, thêm ra màn hình chính như một app 
 - **Chạy không cần mạng**. Dữ liệu lưu trên iPhone; có **Sao lưu ra file / Khôi phục**.
 - **Đồng bộ nhiều máy** (tùy chọn) qua Google Drive của anh, miễn phí.
 
-## 2. Đưa app lên mạng (làm 1 lần)
+## 2. Nhân viên tự chấm công bằng điện thoại (theo toạ độ)
+
+Phần này cần máy chủ Google ở mục 5 (làm 1 lần, miễn phí).
+
+**Anh làm trên máy quản lý:**
+1. Vào công trình › ⚙️ › **📍 Lấy vị trí tôi đang đứng** (đứng tại công trình), chọn **bán kính** (mặc định 150 m) và số giờ tính 1/2 công (mặc định làm dưới 5 giờ = 1/2 công) › Lưu.
+2. Mỗi nhân viên có **Mã NV** và **Mã PIN** (app tự tạo, sửa được). Mở nhân viên › 👤 › **📲 Gửi link cài app cho nhân viên**, gửi qua Zalo.
+
+**Nhân viên làm:**
+1. Mở link bằng Safari (iPhone) hoặc Chrome (Android), **Thêm vào MH chính**, rồi mở app từ màn hình chính.
+2. Đăng nhập mã NV + PIN (lần đầu cần mạng), cho phép dùng vị trí.
+3. Tới công trình bấm **VÀO CA**, về bấm **RA CA**. Đứng ngoài bán kính thì app không cho chấm.
+4. Mất mạng vẫn chấm được: app ghi giờ trên điện thoại và tự gửi khi có mạng lại (máy anh sẽ thấy ghi chú "chấm khi mất mạng").
+
+**Trên máy anh:**
+- Giờ vào/ra của nhân viên tự về (app tự lấy mỗi phút khi đang mở). Thẻ nhân viên hiện dòng 📍 Vào 07:28 · Ra 17:02.
+- Ngày anh chưa chấm thì công lấy theo nhân viên tự chấm. Ngày anh đã chấm thì **công của anh được tính**.
+- Tab **Đối chiếu** liệt kê các ngày: **Lệch** (anh và nhân viên khác nhau), **NV không tự chấm**, **Anh chưa chấm**. Bấm vào dòng để xem giờ, khoảng cách, bản đồ và sửa.
+- File Excel có thêm 2 trang: *Đối chiếu* và *NV tự chấm (GPS)*.
+
+Lưu ý: GPS điện thoại có thể bị phần mềm giả vị trí đánh lừa; app ghi lại toạ độ và sai số từng lần chấm để anh kiểm tra trên bản đồ.
+
+## 3. Đưa app lên mạng (làm 1 lần)
 
 App là các file trong thư mục `app/` (index.html, manifest.json, sw.js, icon-*.png). Cần đặt lên một trang web có **https**. Cách miễn phí: GitHub Pages hoặc Netlify Drop (kéo thả thư mục `app` vào https://app.netlify.com/drop).
 
-## 3. Cài trên iPhone
+## 4. Cài trên iPhone
 
 1. Mở địa chỉ app bằng **Safari**.
 2. Bấm nút **Chia sẻ** (ô vuông có mũi tên lên) › **Thêm vào MH chính** › Thêm.
@@ -28,9 +50,9 @@ App là các file trong thư mục `app/` (index.html, manifest.json, sw.js, ico
 
 Lưu ý: nên luôn mở từ biểu tượng ngoài màn hình chính. iPhone giữ dữ liệu của app ngoài màn hình chính lâu dài; nếu chỉ mở trong tab Safari mà lâu không dùng, iOS có thể tự xóa dữ liệu.
 
-## 4. Đồng bộ nhiều máy qua Google (không bắt buộc)
+## 5. Máy chủ Google (cần cho nhân viên tự chấm và đồng bộ nhiều máy)
 
-Dùng khi anh và người quản lý khác cùng chấm công trên 2 điện thoại, hoặc muốn dữ liệu luôn có bản trên mạng.
+Cần khi nhân viên tự chấm trên máy họ, hoặc anh dùng 2 máy quản lý. Dữ liệu nằm trong Google Drive của anh.
 
 1. Vào https://script.google.com › **Dự án mới**. Xóa hết, dán nội dung file `may-chu/Code.gs`.
 2. Sửa dòng `var MA_BI_MAT = '...'` thành mã riêng của anh.
@@ -40,7 +62,7 @@ Dùng khi anh và người quản lý khác cùng chấm công trên 2 điện t
 
 Dữ liệu nằm trong file `cham-cong-du-lieu.json` ở Google Drive của anh, mỗi ngày có thêm 1 bản sao lưu trong thư mục `cham-cong-sao-luu`.
 
-## 5. Ký hiệu
+## 6. Ký hiệu
 
 | Màu | Ý nghĩa | Tính công |
 |---|---|---|
