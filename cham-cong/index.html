@@ -289,7 +289,7 @@ function veHome() {
     tong += con;
     return '<button class="grp" onclick="di(\'nhom/' + g.id + '\')"><div class="av" style="background:var(--blue)">' + esc(g.ten.trim()[0] || '?').toUpperCase() + '</div><div class="t"><b>' + esc(g.ten) + '</b><small>' + ds.length + ' nhân viên · đã chấm hôm nay ' + daCham + '/' + ds.length + '</small>' + (function () { var r = tinhCT(g); if (r.td === null && !r.hopDong && !r.thu && !r.tongChi) return ''; return (r.td !== null ? '<div style="margin-top:6px">' + thanhTD(r.td, 'var(--blue)') + '</div>' : '') + '<small>' + (r.td !== null ? 'Tiến độ ' + Math.round(r.td) + '% · ' : '') + 'Thu ' + tienGon(r.thu) + (r.hopDong ? '/' + tienGon(r.hopDong) : '') + ' · Chi ' + tienGon(r.tongChi) + (r.dangGiu > 0 ? ' · ứng VT ' + tienGon(r.dangGiu) : '') + '</small>'; })() + '</div><span class="muted">›</span></button>';
   });
-  $app('<div class="hdr"><h1>Chấm công</h1><button class="ic" onclick="moCaiDat()">⚙️</button></div>' +
+  $app('<div class="hdr"><h1>Chấm công</h1>' + (KHOA.coKhoa() ? '<button class="ic" title="Khóa ngay" onclick="KHOA.khoaNgay()">🔒</button>' : '') + '<button class="ic" onclick="moCaiDat()">⚙️</button></div>' +
     '<div class="card"><div class="pad"><span class="muted">Tổng chưa thanh toán</span><div style="display:flex;align-items:center;gap:10px;margin-top:6px"><b class="green" style="font-size:26px">' + tienAn(tong) + '</b>' + nutMat() + '</div></div></div>' +
     '<div class="sec"><h3>CÔNG TRÌNH / NHÓM</h3></div>' +
     '<div class="card list">' + (items.length ? items.join('<div class="dash"></div>') : '<div class="empty">Chưa có nhóm nào.<br>Bấm <b>＋</b> để tạo nhóm đầu tiên (VD: “Lắp Máy Sấy”).</div>') + '</div>' +
@@ -844,6 +844,7 @@ function tamNgung(id) { var n = timNV(id); n.tamNgung = !n.tamNgung; n.upd = now
 /* ---------- Cài đặt, sao lưu, đồng bộ ---------- */
 function moCaiDat() {
   sheet('<h2>⚙️ Cài đặt</h2>' +
+    '<button class="btn ' + (KHOA.coKhoa() ? 'gray' : 'p') + '" style="width:100%" onclick="dongSheet();KHOA.caiDat()">🔒 Mật khẩu mở app: ' + (KHOA.coKhoa() ? 'đang bật' : 'chưa đặt') + '</button>' +
     '<label>Sao lưu dữ liệu</label><div class="row"><button class="btn gray" onclick="saoLuu()">💾 Lưu ra file</button><button class="btn gray" onclick="document.getElementById(\'fileKP\').click()">📂 Khôi phục</button></div><input type="file" id="fileKP" accept=".json,application/json" style="display:none" onchange="khoiPhuc(this.files[0])">' +
     '<h2 style="margin-top:22px">☁️ Đồng bộ nhiều máy (Google, miễn phí)</h2><p class="muted" style="margin-top:-6px;font-size:14px">Dán địa chỉ máy chủ Google Apps Script (xem hướng dẫn). Mọi iPhone dùng cùng địa chỉ + mã bí mật sẽ thấy cùng dữ liệu.</p>' +
     '<label>Địa chỉ máy chủ</label><input id="cdMay" value="' + esc(db.cfg.mayChu) + '" placeholder="https://script.google.com/macros/s/.../exec">' +
@@ -1107,6 +1108,88 @@ var NV = (function () {
   return { batDau: batDau, cham: cham, lamMoi: lamMoi, menu: menu, thang: function (d) { th = themThang(th, d); msg = null; veChinh(); taiLS(); } };
 })();
 
+/* ======================= MẬT KHẨU MỞ APP (máy quản lý) ======================= */
+var KHOA = (function () {
+  var moLuc = 0, anLuc = 0, sai = 0, choDen = 0, dangKhoa = false;
+  function hex(buf) { return Array.prototype.map.call(new Uint8Array(buf), function (b) { return ('0' + b.toString(16)).slice(-2); }).join(''); }
+  function bam(salt, mk) {
+    var s = salt + '|' + mk;
+    if (window.crypto && crypto.subtle && window.TextEncoder) return crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)).then(hex);
+    var h = 5381; for (var i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0; return Promise.resolve('d' + (h >>> 0).toString(16));
+  }
+  function coKhoa() { return !!(db.cfg.matKhau && db.cfg.matKhau.hash); }
+  function dung(mk) { var k = db.cfg.matKhau; return bam(k.salt, mk).then(function (h) { return h === k.hash; }); }
+  function dat(mk) { var salt = uid() + uid(); return bam(salt, mk).then(function (h) { db.cfg.matKhau = { salt: salt, hash: h, sau: (db.cfg.matKhau && db.cfg.matKhau.sau) || 60 }; lsSet(KEY, JSON.stringify(db)); }); }
+  function che(bat) {
+    var e = document.getElementById('cheApp');
+    if (bat && !e) { e = document.createElement('div'); e.id = 'cheApp'; e.style.cssText = 'position:fixed;inset:0;background:var(--bg);z-index:50'; document.body.appendChild(e); }
+    if (!bat && e) e.remove();
+  }
+  function khoa(sauKhiMo) {
+    if (!coKhoa()) { if (sauKhiMo) sauKhiMo(); return; }
+    dangKhoa = true; dongSheet(); che(false);
+    var d = document.createElement('div'); d.id = 'manKhoa';
+    d.style.cssText = 'position:fixed;inset:0;background:var(--bg);z-index:60;display:flex;align-items:center;justify-content:center;padding:24px';
+    d.innerHTML = '<form id="fKhoa" style="width:100%;max-width:340px;text-align:center" autocomplete="off"><div style="font-size:54px">🔒</div><h2 style="margin:6px 0 4px">Chấm công</h2><p class="muted" style="margin:0 0 18px">Nhập mật khẩu để mở</p>' +
+      '<input id="mkMo" type="password" autocomplete="current-password" style="width:100%;font-size:22px;text-align:center;padding:14px;border-radius:14px;border:1.5px solid var(--line);background:#fff;letter-spacing:4px">' +
+      '<div id="mkLoi" class="red" style="min-height:22px;margin:8px 0;font-size:15px"></div>' +
+      '<button class="btn p" style="width:100%" type="submit">Mở khóa</button>' +
+      '<button class="btn gray" style="width:100%;margin-top:10px;background:none;color:var(--blue)" type="button" id="mkQuen">Quên mật khẩu?</button></form>';
+    document.body.appendChild(d);
+    var $i = document.getElementById('mkMo'), $l = document.getElementById('mkLoi');
+    setTimeout(function () { $i.focus(); }, 100);
+    document.getElementById('fKhoa').onsubmit = function (ev) {
+      ev.preventDefault();
+      if (Date.now() < choDen) { $l.textContent = 'Sai nhiều lần, chờ ' + Math.ceil((choDen - Date.now()) / 1000) + ' giây'; return; }
+      dung($i.value).then(function (ok) {
+        if (ok) { sai = 0; dangKhoa = false; moLuc = Date.now(); d.remove(); if (sauKhiMo) sauKhiMo(); return; }
+        sai++; $i.value = ''; if (navigator.vibrate) navigator.vibrate(200);
+        if (sai >= 5) { choDen = Date.now() + 30000 * (sai - 4); $l.textContent = 'Sai ' + sai + ' lần, chờ ' + 30 * (sai - 4) + ' giây'; }
+        else $l.textContent = 'Sai mật khẩu (' + sai + '/5)';
+      });
+    };
+    document.getElementById('mkQuen').onclick = function () {
+      if (!db.cfg.mayChu || !db.cfg.khoa) { $l.innerHTML = 'Chưa cài máy chủ nên không lấy lại được. Cách duy nhất: xóa app và khôi phục từ file sao lưu.'; return; }
+      var m = window.prompt('Nhập MÃ BÍ MẬT máy chủ Google (trong file Code.gs) để tắt mật khẩu:');
+      if (m === null) return;
+      if (m.trim() === db.cfg.khoa) { delete db.cfg.matKhau; lsSet(KEY, JSON.stringify(db)); dangKhoa = false; d.remove(); toast('Đã tắt mật khẩu, hãy đặt mật khẩu mới trong ⚙️'); if (sauKhiMo) sauKhiMo(); }
+      else $l.textContent = 'Mã bí mật không đúng';
+    };
+  }
+  // Ẩn nội dung khi chuyển app (không lộ trong màn hình đa nhiệm), khóa lại khi quay về quá thời gian
+  document.addEventListener('visibilitychange', function () {
+    if (VAI === 'nv' || !coKhoa()) return;
+    if (document.visibilityState === 'hidden') { anLuc = Date.now(); if (!dangKhoa) che(true); }
+    else if (!dangKhoa) { if (Date.now() - anLuc >= (db.cfg.matKhau.sau || 0) * 1000) khoa(function () { ve(); }); else che(false); }
+  });
+  function caiDat() {
+    var k = db.cfg.matKhau, sau = k ? k.sau : 60;
+    var chonSau = '<label>Khóa lại khi rời app quá</label><select id="mkSau">' + [[0, 'Ngay lập tức'], [60, '1 phút'], [300, '5 phút'], [900, '15 phút'], [3600, '1 giờ']].map(function (o) { return '<option value="' + o[0] + '"' + (+sau === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>';
+    sheet('<h2>🔒 Mật khẩu mở app</h2>' +
+      (k ? '<p class="green" style="margin-top:-4px">Đang bật. App hỏi mật khẩu khi mở.</p><label>Mật khẩu hiện tại</label><input id="mkCu" type="password">' : '<p class="muted" style="margin-top:-4px;font-size:14px">Người khác cầm máy sẽ không xem được tiền công, thu chi. Nhân viên không bị ảnh hưởng.</p>') +
+      '<label>' + (k ? 'Mật khẩu mới (để trống nếu không đổi)' : 'Mật khẩu (ít nhất 4 ký tự)') + '</label><input id="mkMoi" type="password" autocomplete="new-password">' +
+      '<label>Nhập lại mật khẩu</label><input id="mkLai" type="password" autocomplete="new-password">' + chonSau +
+      (db.cfg.mayChu && db.cfg.khoa ? '<p class="muted" style="font-size:13px">Quên mật khẩu: dùng mã bí mật máy chủ Google để mở.</p>' : '<p style="font-size:13px;color:#e65100">Chưa cài máy chủ Google: nếu quên mật khẩu sẽ phải cài lại app và khôi phục từ file sao lưu. Hãy ghi mật khẩu ra giấy.</p>') +
+      '<div id="mkTB" class="red" style="font-size:15px;min-height:20px;margin-top:6px"></div>' +
+      '<div class="btns">' + (k ? '<button class="btn red" id="mkTat">Tắt mật khẩu</button>' : '<button class="btn gray" onclick="dongSheet()">Hủy</button>') + '<button class="btn p" id="mkLuu">' + (k ? 'Lưu' : 'Bật mật khẩu') + '</button></div>');
+    var tb = document.getElementById('mkTB'), val = function (i) { return document.getElementById(i).value; };
+    var kiemCu = function () { return k ? dung(val('mkCu')) : Promise.resolve(true); };
+    document.getElementById('mkLuu').onclick = function () {
+      var moi = val('mkMoi'), lai = val('mkLai'), s2 = +val('mkSau');
+      if ((!k || moi) && moi.length < 4) return tb.textContent = 'Mật khẩu ít nhất 4 ký tự';
+      if (moi !== lai) return tb.textContent = 'Hai lần nhập không giống nhau';
+      kiemCu().then(function (ok) {
+        if (!ok) return tb.textContent = 'Mật khẩu hiện tại không đúng';
+        (moi ? dat(moi) : Promise.resolve()).then(function () { db.cfg.matKhau.sau = s2; lsSet(KEY, JSON.stringify(db)); moLuc = Date.now(); dongSheet(); toast(k ? '✓ Đã lưu' : '🔒 Đã bật mật khẩu'); ve(); });
+      });
+    };
+    if (k) document.getElementById('mkTat').onclick = function () {
+      kiemCu().then(function (ok) { if (!ok) return tb.textContent = 'Nhập đúng mật khẩu hiện tại để tắt'; delete db.cfg.matKhau; lsSet(KEY, JSON.stringify(db)); dongSheet(); toast('Đã tắt mật khẩu'); ve(); });
+    };
+  }
+  return { khoa: khoa, coKhoa: coKhoa, caiDat: caiDat, khoaNgay: function () { khoa(function () { ve(); }); } };
+})();
+
 /* ======================= KHỞI ĐỘNG ======================= */
 var Q = new URLSearchParams(location.search);
 if (Q.get('nv')) { lsSet('cc_vai', 'nv'); if (Q.get('may')) lsSet('cc_nv_may', Q.get('may')); if (Q.get('ma')) lsSet('cc_nv_ma_goiy', Q.get('ma')); }
@@ -1117,12 +1200,12 @@ document.addEventListener('visibilitychange', function () {
   if (homNay() !== ngayDangXem) { ngayDangXem = homNay(); S.th = thangNay(); }
   if (VAI === 'nv') return NV.lamMoi();
   if (db.cfg.mayChu) dongBo(true);
-  if (!document.querySelector('.ov')) ve();
+  if (!document.querySelector('.ov') && !document.getElementById('manKhoa')) ve();
 });
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(function () {});
 if (VAI === 'nv') NV.batDau();
 else {
-  ve();
+  if (KHOA.coKhoa()) KHOA.khoa(function () { ve(); }); else ve();
   if (db.cfg.mayChu) dongBo(true);
   // Máy quản lý: 1 phút lấy chấm công mới của nhân viên 1 lần
   setInterval(function () { if (db.cfg.mayChu && document.visibilityState === 'visible' && navigator.onLine !== false) dongBo(true); }, 60000);

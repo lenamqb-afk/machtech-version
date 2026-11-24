@@ -14,6 +14,7 @@ App chạy trên Safari của iPhone, thêm ra màn hình chính như một app 
 - **Tạm ngừng** nhân viên nghỉ việc (giữ lịch sử).
 - **Ẩn/hiện số tiền** (nút con mắt).
 - **Xuất Excel** theo nhóm hoặc theo 1 người: Bảng công (X, ½, P, K, L từng ngày), Bảng tiền công có cột Ký nhận, danh sách ứng/tăng ca/thanh toán, ghi chú.
+- **Mật khẩu mở app** (⚙️ › 🔒): app hỏi mật khẩu khi mở và khi quay lại sau thời gian anh chọn (ngay lập tức, 1, 5, 15 phút, 1 giờ). Khi chuyển sang app khác, nội dung được che, không lộ trong màn hình đa nhiệm. Nút 🔒 ở trang chủ để khóa ngay. Sai 5 lần phải chờ. Quên mật khẩu: mở bằng mã bí mật máy chủ Google (nếu đã cài), nên ghi mật khẩu ra giấy. Máy nhân viên không bị ảnh hưởng (họ đã có mã PIN riêng).
 - **Chạy không cần mạng**. Dữ liệu lưu trên iPhone; có **Sao lưu ra file / Khôi phục**.
 - **Đồng bộ nhiều máy** (tùy chọn) qua Google Drive của anh, miễn phí.
 
