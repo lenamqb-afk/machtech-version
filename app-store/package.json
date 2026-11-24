@@ -1,6 +1,6 @@
 {
   "name": "cham-cong-machtech",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "private": true,
   "description": "Chấm Công Tính Lương - bản app iOS/Android (Capacitor) bọc thư mục ../cham-cong",
   "scripts": {
