@@ -429,7 +429,8 @@ function veNV(nv) {
     '<button class="act" onclick="moGD(\'' + nv.id + '\',\'thanhtoan\')"><i>✅</i>Thanh toán</button>' +
     '<button class="act" onclick="xuatExcel(\'' + nv.nhomId + '\',\'' + nv.id + '\')"><i>📊</i>Xuất Excel</button>' +
     '<button class="act" onclick="chamThangNhanh(\'' + nv.id + '\')"><i>☑️</i>Chấm nhanh</button>' +
-    '<button class="act" onclick="tamNgung(\'' + nv.id + '\')"><i>⏸️</i>' + (nv.tamNgung ? 'Kích hoạt' : 'Tạm ngừng') + '</button></div></div>' +
+    '<button class="act" onclick="tamNgung(\'' + nv.id + '\')"><i>⏸️</i>' + (nv.tamNgung ? 'Kích hoạt' : 'Tạm ngừng') + '</button></div>' +
+    '<div class="dash"></div><div style="display:flex;align-items:center;gap:10px;padding:12px 18px"><div style="flex:1;font-size:14px" class="muted">App nhân viên<br><b style="color:var(--fg)">Mã ' + esc(nv.ma || '(chưa có)') + ' · PIN ' + esc(nv.pin || '—') + '</b></div><button class="btn b" style="flex:none;padding:10px 14px;font-size:15px" onclick="guiNV(\'' + nv.id + '\')">📲 Gửi link cài app</button></div></div>' +
     '<div class="card"><div class="kv"><b class="blue" style="font-size:20px">Tiền Công Tháng ' + m + '</b><span class="muted" style="font-size:14px">' + tien(nv.luongNgay) + '/ngày</span></div>' +
     '<div class="dash"></div><div class="kv"><span>Tổng lương</span><b class="blue">' + tienAn(r.tong) + '</b></div>' +
     '<div class="dash"></div><div class="kv"><span>Tổng đã ứng</span><b class="red">' + tien(r.ung) + '</b></div>' +
@@ -803,6 +804,7 @@ function linkNV(n) {
 function guiNV(id) {
   var n = timNV(id), g = timNhom(n.nhomId) || {};
   if (!db.cfg.mayChu) return toast('Cần cài máy chủ đồng bộ trước (⚙️ Cài đặt)');
+  if (!n.ma || !n.pin) { if (!n.ma) n.ma = maMoi(); if (!n.pin) n.pin = pinMoi(); n.upd = now(); luu(); dongBo(true); }
   var txt = 'Chào ' + n.ten + ', cài app chấm công ' + (g.ten ? '(' + g.ten + ') ' : '') + 'như sau:\n1. Mở link bằng Safari (iPhone) hoặc Chrome (Android):\n' + linkNV(n) +
     '\n2. iPhone: bấm Chia sẻ › Thêm vào MH chính. Android: menu ⋮ › Thêm vào màn hình chính.\n3. Mở app từ màn hình chính, đăng nhập:\nMã NV: ' + n.ma + '\nMã PIN: ' + n.pin + '\n4. Cho phép app dùng vị trí. Tới công trình bấm VÀO CA, về bấm RA CA.';
   if (navigator.share) navigator.share({ text: txt }).catch(function () {});
@@ -1193,7 +1195,7 @@ var KHOA = (function () {
 })();
 
 /* ======================= THÔNG TIN PHẦN MỀM ======================= */
-var PHIEN_BAN = '1.0.0', NGAY_PB = '24/11/2026', HOTLINE = '0911337373';
+var PHIEN_BAN = '1.0.1', NGAY_PB = '24/11/2026', HOTLINE = '0911337373';
 function moThongTin() {
   var la = VAI === 'nv', kb = 0;
   try { kb = ((lsGet(KEY) || '').length / 1024).toFixed(1).replace('.', ','); } catch (e) {}
