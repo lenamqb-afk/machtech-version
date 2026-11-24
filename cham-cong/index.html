@@ -308,10 +308,11 @@ function di(h) { location.hash = h; }
 window.addEventListener('hashchange', function () { if (VAI !== 'ql') return; S.chiTiet = S.chiTietNV = false; S.tim = ''; ve(); window.scrollTo(0, 0); });
 
 function ve() {
+  if (VAI === 'ql' && BQ.hetHan()) return BQ.veHetHan();
   var r = route();
   if (r.v === 'nhom' && timNhom(r.id) && !timNhom(r.id).xoa) veNhom(timNhom(r.id));
   else if (r.v === 'nv' && timNV(r.id) && !timNV(r.id).xoa) veNV(timNV(r.id));
-  else veHome();
+  else { veHome(); BQ.bang(); }
 }
 
 /* ---------- Trang chủ: danh sách nhóm ---------- */
@@ -843,7 +844,6 @@ function guiNV(id) {
   chiaSe(txt, 'Đã copy, dán vào Zalo gửi nhân viên');
 }
 function suaNV(id, nhomId) {
-  if (!id && !BQ.choThemNV()) return BQ.moMua('Bản miễn phí quản lý tối đa ' + BQ.MIEN_PHI + ' nhân viên.');
   var n = id ? timNV(id) : null;
   sheet('<h2>' + (n ? 'Thông tin nhân viên' : 'Thêm nhân viên') + '</h2>' +
     '<label>Họ tên</label><input id="nvTen" value="' + esc(n ? n.ten : '') + '">' +
@@ -1247,7 +1247,7 @@ var KHOA = (function () {
 })();
 
 /* ======================= THÔNG TIN PHẦN MỀM ======================= */
-var PHIEN_BAN = '1.0.5', NGAY_PB = '24/11/2026', HOTLINE = '0911337373';
+var PHIEN_BAN = '1.0.6', NGAY_PB = '24/11/2026', HOTLINE = '0911337373';
 function moThongTin() {
   var la = VAI === 'nv', kb = 0;
   try { kb = ((lsGet(KEY) || '').length / 1024).toFixed(1).replace('.', ','); } catch (e) {}
@@ -1277,14 +1277,40 @@ function moThongTin() {
 
 
 /* ======================= BẢN QUYỀN (mua 1 lần trong app) ======================= */
-/* App tải miễn phí. Chế độ quản lý miễn phí tới MIEN_PHI nhân viên; mua 1 lần để không giới hạn.
-   Máy nhân viên luôn miễn phí. Bản web không giới hạn. */
+/* App tải miễn phí. Chế độ quản lý dùng thử NGAY_THU ngày, sau đó mua 1 lần để dùng tiếp.
+   Hết hạn vẫn lưu được dữ liệu ra file. Máy nhân viên luôn miễn phí. Bản web không giới hạn. */
 var BQ = (function () {
-  var SP = 'vn.machtech.chamcong.quanly', K = 'cc_banquyen', MIEN_PHI = 3, gia = '';
+  var SP = 'vn.machtech.chamcong.quanly', K = 'cc_banquyen', K_BD = 'cc_dungthu_bd', NGAY_THU = 7, gia = '';
   var NP = function () { return CP.NativePurchases; };
   function daMua() { return !NATIVE || lsGet(K) === '1'; }
-  function soNV() { return db.nv.filter(function (n) { return !n.xoa && !n.tamNgung; }).length; }
-  function choThemNV() { return daMua() || soNV() < MIEN_PHI; }
+  function batDauThu() {
+    if (!NATIVE) return;
+    if (!lsGet(K_BD)) lsSet(K_BD, String(Date.now()));
+    // Ngày tải app gốc từ App Store (giữ nguyên khi xoá app cài lại)
+    if (NP() && NP().getAppTransaction) NP().getAppTransaction().then(function (r) {
+      var t = Date.parse(r && r.appTransaction && r.appTransaction.originalPurchaseDate);
+      if (t > Date.parse('2026-01-01') && t < +lsGet(K_BD) && t <= Date.now()) { lsSet(K_BD, String(t)); if (hetHan()) ve(); }
+    }, function () {});
+  }
+  function conNgay() { var bd = +lsGet(K_BD) || Date.now(); return Math.max(0, NGAY_THU - Math.floor((Date.now() - bd) / 86400000)); }
+  function hetHan() { return NATIVE && !daMua() && conNgay() <= 0; }
+  function veHetHan() {
+    $app('<div class="hdr"><h1>Chấm công</h1><button class="ic" onclick="moThongTin()">ⓘ</button></div>' +
+      '<div class="card pad" style="text-align:center"><div style="font-size:46px">⏳</div><h2 style="margin:6px 0">Đã hết ' + NGAY_THU + ' ngày dùng thử</h2>' +
+      '<p class="muted">Dữ liệu của anh vẫn còn nguyên trong máy. Mua bản đầy đủ 1 lần để tiếp tục chấm công, tính lương.</p>' +
+      '<button class="btn p" style="width:100%;padding:16px 0;font-size:18px" onclick="BQ.moMua()">⭐ Mua bản đầy đủ</button>' +
+      '<button class="btn gray" style="width:100%;margin-top:10px" onclick="saoLuu()">💾 Lưu dữ liệu ra file</button></div>' +
+      '<p class="muted" style="text-align:center;font-size:13px">Máy nhân viên vẫn chấm công bình thường, miễn phí.</p>');
+    $bottom('');
+  }
+  function bang() {
+    if (!NATIVE || daMua() || hetHan()) return;
+    var a = document.getElementById('app'), d = document.createElement('div');
+    d.style.cssText = 'margin:0 0 10px;padding:9px 14px;border-radius:12px;background:#fff4d6;color:#7a5200;font-size:14px;font-weight:600;cursor:pointer';
+    d.textContent = '⭐ Dùng thử còn ' + conNgay() + ' ngày · Bấm để mua bản đầy đủ';
+    d.onclick = function () { moMua(); };
+    var h = a.querySelector('.hdr'); if (h && h.nextSibling) a.insertBefore(d, h.nextSibling); else a.appendChild(d);
+  }
   function coGiaoDich(ds) { return (ds || []).some(function (t) { return t.productIdentifier === SP && (t.purchaseState === undefined || String(t.purchaseState) === '1' || t.purchaseState === 'PURCHASED'); }); }
   function moKhoa() { lsSet(K, '1'); }
   function kiemTra(imLang) {
@@ -1300,9 +1326,9 @@ var BQ = (function () {
   function moMua(lyDo) {
     var da = daMua();
     sheet('<div style="text-align:center"><div style="font-size:46px">⭐</div><h2 style="margin:6px 0">' + (da ? 'Anh đang dùng bản đầy đủ' : 'Mở khoá bản đầy đủ') + '</h2>' +
-      (lyDo && !da ? '<p class="muted" style="margin-top:0">' + esc(lyDo) + '</p>' : '') + '</div>' +
+      (!da ? '<p class="muted" style="margin-top:0">' + esc(lyDo || (hetHan() ? 'Đã hết hạn dùng thử.' : 'Dùng thử còn ' + conNgay() + ' ngày.')) + '</p>' : '') + '</div>' +
       '<div class="card pad" style="margin:12px 0;box-shadow:none;border:1px solid var(--line)">' +
-      ['Không giới hạn số nhân viên, số công trình', 'Tính lương, thanh toán, thu chi, tiến độ', 'Nhân viên tự chấm bằng GPS, đối chiếu', 'Xuất Excel, đồng bộ nhiều máy, nhắc chấm công', 'Trả <b>1 lần</b>, dùng mãi, không thu phí hằng tháng'].map(function (t) { return '<div style="padding:4px 0">✓ ' + t + '</div>'; }).join('') +
+      ['Dùng mãi sau ' + NGAY_THU + ' ngày dùng thử, không giới hạn nhân viên, công trình', 'Tính lương, thanh toán, thu chi, tiến độ', 'Nhân viên tự chấm bằng GPS, đối chiếu', 'Xuất Excel, đồng bộ nhiều máy, nhắc chấm công', 'Trả <b>1 lần</b>, dùng mãi, không thu phí hằng tháng'].map(function (t) { return '<div style="padding:4px 0">✓ ' + t + '</div>'; }).join('') +
       '</div>' +
       (da ? '' : '<button class="btn p" id="bqMua" style="width:100%;padding:16px 0;font-size:18px">Mua bản đầy đủ <span id="bqGia"></span></button>') +
       '<button class="btn gray" id="bqKP" style="width:100%;margin-top:10px">Khôi phục giao dịch đã mua</button>' +
@@ -1316,7 +1342,7 @@ var BQ = (function () {
       if (!NATIVE || !NP()) return;
       var b = this; b.disabled = true; $m.textContent = 'Đang kết nối App Store…';
       NP().purchaseProduct({ productIdentifier: SP, productType: 'inapp', quantity: 1 }).then(function (t) {
-        moKhoa(); dongSheet(); toast('✓ Cảm ơn anh! Đã mở khoá bản đầy đủ'); ve();
+        moKhoa(); dongSheet(); toast('✓ Cảm ơn anh! Đã mở khoá bản đầy đủ'); location.hash = ''; ve();
       }, function (e) {
         b.disabled = false; var t = String(e && (e.message || e));
         $m.innerHTML = /cancel/i.test(t) ? 'Đã huỷ mua.' : '<span class="red">Chưa mua được: ' + esc(t) + '</span>';
@@ -1327,13 +1353,13 @@ var BQ = (function () {
       var b = this; b.disabled = true; $m.textContent = 'Đang khôi phục…';
       NP().restorePurchases().catch(function () {}).then(function () { return kiemTra(); }).then(function (ok) {
         b.disabled = false;
-        if (ok) { dongSheet(); toast('✓ Đã khôi phục bản đầy đủ'); ve(); }
+        if (ok) { dongSheet(); toast('✓ Đã khôi phục bản đầy đủ'); location.hash = ''; ve(); }
         else $m.textContent = 'Apple ID này chưa mua bản đầy đủ.';
       });
     };
   }
-  function nhan() { return daMua() ? 'Bản đầy đủ' : 'Miễn phí (tối đa ' + MIEN_PHI + ' NV)'; }
-  return { MIEN_PHI: MIEN_PHI, daMua: daMua, choThemNV: choThemNV, kiemTra: kiemTra, moMua: moMua, nhan: nhan };
+  function nhan() { return daMua() ? 'Bản đầy đủ' : hetHan() ? 'Hết hạn dùng thử' : 'Dùng thử còn ' + conNgay() + ' ngày'; }
+  return { daMua: daMua, batDauThu: batDauThu, hetHan: hetHan, veHetHan: veHetHan, bang: bang, kiemTra: kiemTra, moMua: moMua, nhan: nhan };
 })();
 
 /* ======================= NHẮC CHẤM CÔNG HẰNG NGÀY ======================= */
@@ -1446,6 +1472,7 @@ if (VAI) NHAC.henLap();
 if (NATIVE && !lsGet('cc_vai')) chonVaiTro();
 else if (VAI === 'nv') NV.batDau();
 else {
+  BQ.batDauThu();
   if (KHOA.coKhoa()) KHOA.khoa(function () { ve(); }); else ve();
   if (NATIVE && !BQ.daMua()) BQ.kiemTra();
   if (db.cfg.mayChu) dongBo(true);
