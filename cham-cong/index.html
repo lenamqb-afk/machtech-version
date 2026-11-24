@@ -1609,6 +1609,7 @@ var NV = (function () {
   function batDau() {
     document.body.style.paddingBottom = '20px';
     if (!phien) return veDN();
+    try { if (may() && !NATIVE && !Q.get('may')) history.replaceState(null, '', location.pathname + '?nv=1&may=' + encodeURIComponent(may())); } catch (e) {}
     veChinh(); batGPS(); lamMoi();
     setInterval(function () { var e = document.getElementById('nvGio'); if (e) e.textContent = new Date().toTimeString().slice(0, 8); }, 1000);
     setInterval(guiCho, 30000);
@@ -1628,7 +1629,7 @@ var NV = (function () {
       '<button class="btn p" style="width:100%;margin-top:16px" id="dnOk">Đăng nhập</button>' +
       (loi ? '<p class="red" style="margin-bottom:0">' + esc(loi) + '</p>' : '') + '</div>' +
       '<p class="muted" style="text-align:center;font-size:13px">Lần đầu đăng nhập cần có mạng.</p>' +
-      (NATIVE ? '<p style="text-align:center"><button class="btn gray" onclick="doiVaiTro()">← Tôi là quản lý</button></p>' : ''));
+      (NATIVE || !may() ? '<p style="text-align:center"><button class="btn gray" onclick="doiVaiTro()">← Tôi là quản lý</button></p>' : ''));
     $bottom('');
     document.getElementById('dnOk').onclick = function () {
       var ma = document.getElementById('dnMa').value.trim().toUpperCase(), pin = document.getElementById('dnPin').value.trim();
@@ -1848,7 +1849,7 @@ var KHOA = (function () {
 })();
 
 /* ======================= THÔNG TIN PHẦN MỀM ======================= */
-var PHIEN_BAN = '1.0.13', NGAY_PB = '24/11/2026', HOTLINE = '0911337373';
+var PHIEN_BAN = '1.0.14', NGAY_PB = '24/11/2026', HOTLINE = '0911337373';
 function moThongTin() {
   var la = VAI === 'nv', kb = 0;
   try { kb = ((lsGet(KEY) || '').length / 1024).toFixed(1).replace('.', ','); } catch (e) {}
@@ -2052,12 +2053,24 @@ function chonVaiTro() {
     '<p class="muted" style="font-size:13px;margin-bottom:0">Dữ liệu lưu trong máy, dùng được khi không có mạng.</p></div>';
 }
 function datVaiTro(v) { lsSet('cc_vai', v); location.reload(); }
-function doiVaiTro() { try { localStorage.removeItem('cc_vai'); } catch (e) {} location.reload(); }
+function doiVaiTro() { try { localStorage.removeItem('cc_vai'); localStorage.removeItem('cc_nv_may'); } catch (e) {} location.replace(location.origin + location.pathname); }
 
 /* ======================= KHỞI ĐỘNG ======================= */
 var Q = new URLSearchParams(location.search);
 if (Q.get('nv')) { lsSet('cc_vai', 'nv'); if (Q.get('may')) lsSet('cc_nv_may', Q.get('may')); if (Q.get('ma')) lsSet('cc_nv_ma_goiy', Q.get('ma')); }
-var VAI = lsGet('cc_vai') || (NATIVE ? '' : 'ql');
+/* Web: máy đã có dữ liệu quản lý thì vào thẳng quản lý; máy trống (vd. nhân viên mở nhầm link chung) thì hỏi vai trò trước */
+var VAI = lsGet('cc_vai') || (NATIVE || !(db.nhom.length || db.nv.length) ? '' : 'ql');
+/* Máy nhân viên: biểu tượng ngoài màn hình chính luôn mở lại đúng chế độ nhân viên */
+if (VAI === 'nv') (function () {
+  try {
+    var u = location.origin + location.pathname + '?nv=1' + (lsGet('cc_nv_may') ? '&may=' + encodeURIComponent(lsGet('cc_nv_may')) : '');
+    if (!Q.get('nv')) history.replaceState(null, '', u);
+    var base = location.origin + location.pathname.replace(/[^/]*$/, '');
+    var mf = { name: 'Chấm Công (nhân viên)', short_name: 'Chấm Công', start_url: u, scope: base, display: 'standalone', background_color: '#eef3f7', theme_color: '#eef3f7', lang: 'vi',
+      icons: [{ src: base + 'icon-192.png', sizes: '192x192', type: 'image/png' }, { src: base + 'icon-512.png', sizes: '512x512', type: 'image/png' }] };
+    var l = document.querySelector('link[rel=manifest]'); if (l) l.href = URL.createObjectURL(new Blob([JSON.stringify(mf)], { type: 'application/manifest+json' }));
+  } catch (e) {}
+})();
 var ngayDangXem = homNay();
 document.addEventListener('visibilitychange', function () {
   if (document.visibilityState !== 'visible') return;
@@ -2070,7 +2083,7 @@ document.addEventListener('visibilitychange', function () {
 });
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(function () {});
 if (VAI) NHAC.henLap();
-if (NATIVE && !lsGet('cc_vai')) chonVaiTro();
+if (!VAI) chonVaiTro();
 else if (VAI === 'nv') NV.batDau();
 else {
   BQ.batDauThu();
