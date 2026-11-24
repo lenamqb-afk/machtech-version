@@ -80,6 +80,15 @@ body{padding-top:env(safe-area-inset-top);padding-bottom:calc(90px + env(safe-ar
 .bottom .in{max-width:640px;margin:0 auto;display:flex;align-items:center;gap:12px}
 .bottom .in span{flex:1;font-size:17px}
 .bottom .btn{flex:none;padding:14px 22px;font-size:18px}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:10;background:rgba(255,255,255,.96);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:1px solid var(--line);display:flex;padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
+.tabbar button{flex:1;border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;color:var(--muted);padding:4px 0}
+.tabbar button i{font-style:normal;font-size:23px;filter:grayscale(1);opacity:.6}.tabbar button.on{color:var(--blue);font-weight:600}.tabbar button.on i{filter:none;opacity:1}
+body.cotab{padding-bottom:calc(150px + env(safe-area-inset-bottom))!important}body.cotab .fab{bottom:calc(84px + env(safe-area-inset-bottom))}
+.nvr{display:flex;align-items:center;gap:12px;padding:12px 16px;width:100%;border:0;background:none;text-align:left;font:inherit;color:inherit}
+.nvr .t{flex:1;min-width:0}.nvr .t b{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.nvr .t small{color:var(--muted);font-size:13px}
+.ip{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:12px;padding:11px 14px;font-size:16px;background:#fff;color:var(--fg);margin-bottom:8px;-webkit-appearance:none;appearance:none}
+.seg.nho button{font-size:13px;padding:9px 2px}
+.bdg{display:inline-block;padding:1px 8px;border-radius:7px;font-size:12px;font-weight:600;margin-left:4px}
 .fab{position:fixed;right:20px;bottom:calc(24px + env(safe-area-inset-bottom));width:62px;height:62px;border-radius:50%;background:var(--orange);color:#fff;border:0;font-size:30px;box-shadow:0 4px 12px #ff980066;z-index:9}
 .list .it{display:flex;align-items:center;gap:10px;padding:12px 18px;border-top:1px solid var(--line)}
 .list .it:first-child{border-top:0}
@@ -112,6 +121,7 @@ body{padding-top:env(safe-area-inset-top);padding-bottom:calc(90px + env(safe-ar
 <body>
 <div class="wrap" id="app"></div>
 <div id="bottom"></div>
+<nav class="tabbar" id="tabbar" style="display:none"></nav>
 <div id="sheetHost"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
 <script>
@@ -311,14 +321,75 @@ function cong(a, b) { Object.keys(b).forEach(function (k) { if (typeof b[k] === 
 var S = { th: thangNay(), tab: 'cham', tim: '', chiTiet: false, chiTietNV: false };
 function route() { var h = location.hash.slice(1).split('/'); return { v: h[0] || 'home', id: h[1] || '' }; }
 function di(h) { location.hash = h; }
-window.addEventListener('hashchange', function () { if (VAI !== 'ql') return; S.chiTiet = S.chiTietNV = false; S.tim = ''; ve(); window.scrollTo(0, 0); });
+window.addEventListener('hashchange', function () { if (VAI !== 'ql') return; var r0 = route(); if (r0.v === 'dsnv') S.tuDS = true; else if (r0.v !== 'nv') S.tuDS = false; S.chiTiet = S.chiTietNV = false; S.tim = ''; ve(); window.scrollTo(0, 0); });
 
 function ve() {
-  if (VAI === 'ql' && BQ.hetHan()) return BQ.veHetHan();
+  if (VAI === 'ql' && BQ.hetHan()) { veTab(''); return BQ.veHetHan(); }
   var r = route();
-  if (r.v === 'nhom' && timNhom(r.id) && !timNhom(r.id).xoa) veNhom(timNhom(r.id));
-  else if (r.v === 'nv' && timNV(r.id) && !timNV(r.id).xoa) veNV(timNV(r.id));
-  else { veHome(); BQ.bang(); }
+  if (r.v === 'nhom' && timNhom(r.id) && !timNhom(r.id).xoa) { veTab(''); veNhom(timNhom(r.id)); }
+  else if (r.v === 'nv' && timNV(r.id) && !timNV(r.id).xoa) { veTab(''); veNV(timNV(r.id)); }
+  else if (r.v === 'dsnv') { veDSNV(); veTab('dsnv'); }
+  else if (r.v === 'tongtc') { veTongTC(); veTab('tongtc'); }
+  else { veHome(); BQ.bang(); veTab('home'); }
+}
+/* Thanh tab dưới đáy (chỉ ở các trang chính của máy quản lý) */
+function veTab(on) {
+  var t = document.getElementById('tabbar'); if (!t) return;
+  if (!on || VAI !== 'ql') { t.style.display = 'none'; document.body.classList.remove('cotab'); return; }
+  t.style.display = ''; document.body.classList.add('cotab');
+  t.innerHTML = [['home', '🏗️', 'Công trình'], ['dsnv', '👷', 'Nhân viên'], ['tongtc', '💰', 'Thu chi'], ['cd', '⚙️', 'Cài đặt']].map(function (x) {
+    return '<button class="' + (x[0] === on ? 'on' : '') + '" onclick="' + (x[0] === 'cd' ? 'moCaiDat()' : 'di(\'' + (x[0] === 'home' ? '' : x[0]) + '\')') + '"><i>' + x[1] + '</i>' + x[2] + '</button>';
+  }).join('');
+}
+/* ---------- Tab Nhân viên: quản lý tất cả nhân viên ---------- */
+var DSNV = { loc: 'lam', nhom: '', tim: '' };
+function veDSNV() {
+  var hn = homNay(), nds = nhomDS(), ids = {}; nds.forEach(function (g) { ids[g.id] = g; });
+  var tat = db.nv.filter(function (n) { return !n.xoa && ids[n.nhomId]; });
+  var lam = tat.filter(function (n) { return !n.tamNgung; }), daCham = lam.filter(function (n) { return getCong(n.id, hn); }).length, tongCon = 0;
+  tat.forEach(function (n) { tongCon += tinh(n, null).conLai; });
+  var q = DSNV.tim.trim().toLowerCase();
+  var ds = tat.filter(function (n) {
+    if (DSNV.loc === 'lam' && n.tamNgung) return false; if (DSNV.loc === 'ngung' && !n.tamNgung) return false; if (DSNV.loc === 'chua' && (n.tamNgung || getCong(n.id, hn))) return false;
+    if (DSNV.nhom && n.nhomId !== DSNV.nhom) return false;
+    return !q || [n.ten, n.ma, n.sdt, n.chucVu].join(' ').toLowerCase().indexOf(q) >= 0;
+  }).sort(function (a, b) { return (ids[a.nhomId].ten).localeCompare(ids[b.nhomId].ten) || a.ten.localeCompare(b.ten); });
+  var dem = { lam: lam.length, chua: lam.length - daCham, ngung: tat.length - lam.length, tat: tat.length };
+  var dong = ds.map(function (n) {
+    var c = getCong(n.id, hn), con = tinh(n, null).conLai;
+    var bd = n.tamNgung ? '<span class="bdg" style="background:#fff3e0;color:#e65100">Tạm ngừng</span>'
+      : c ? '<span class="bdg" style="background:#e8f5e9;color:#2e7d32">' + (c.tt === '1' ? '✓ 1 công' : c.tt === '0.5' ? '✓ ½ công' : LOAI_CONG[c.tt].ten) + '</span>'
+      : '<span class="bdg" style="background:#eef1f5;color:var(--muted)">Chưa chấm</span>';
+    return '<button class="nvr" onclick="di(\'nv/' + n.id + '\')"><div class="av" style="background:' + (n.tamNgung ? '#c3c6d0' : '#8e8fa8') + '">' + esc(n.ten.trim().split(/\s+/).pop().charAt(0).toUpperCase() || '?') + '</div>' +
+      '<div class="t"><b>' + esc(n.ten) + '</b><small>' + bd.replace('margin-left:4px', 'margin:0 4px 0 0') + esc([n.chucVu, ids[n.nhomId].ten].filter(Boolean).join(' · ')) + '</small></div>' +
+      '<div style="text-align:right;flex:none"><b style="font-size:15px" class="' + (con > 0 ? 'green' : 'muted') + '">' + (db.cfg.an ? '***' : tienGon(con)) + '</b><br><small class="muted">chưa nhận</small></div></button>';
+  });
+  $app('<div class="hdr"><h1>Nhân viên</h1>' + nutMat() + '</div>' +
+    '<div class="card" style="display:flex;text-align:center">' + [['Đang làm', dem.lam, ''], ['Đã chấm hôm nay', daCham + '/' + dem.lam, daCham === dem.lam && dem.lam ? 'green' : ''], ['Chưa thanh toán', db.cfg.an ? '***' : tienGon(tongCon), 'green']].map(function (x) { return '<div style="flex:1;padding:12px 4px"><b style="font-size:20px" class="' + x[2] + '">' + x[1] + '</b><div class="muted" style="font-size:12px">' + x[0] + '</div></div>'; }).join('') + '</div>' +
+    '<input id="dsTim" class="ip" placeholder="🔍 Tìm tên, mã NV, số điện thoại" value="' + esc(DSNV.tim) + '">' +
+    '<div class="seg nho" style="margin:0 0 8px;max-width:none">' + [['lam', 'Đang làm'], ['chua', 'Chưa chấm'], ['ngung', 'Nghỉ'], ['tat', 'Tất cả']].map(function (x) { return '<button class="' + (DSNV.loc === x[0] ? 'on' : '') + '" onclick="DSNV.loc=\'' + x[0] + '\';ve()">' + x[1] + ' ' + dem[x[0]] + '</button>'; }).join('') + '</div>' +
+    (nds.length > 1 ? '<select id="dsNhom" class="ip"><option value="">Tất cả công trình</option>' + nds.map(function (g) { return '<option value="' + g.id + '"' + (DSNV.nhom === g.id ? ' selected' : '') + '>' + esc(g.ten) + '</option>'; }).join('') + '</select>' : '') +
+    '<div class="card list" style="padding:4px 0">' + (dong.length ? dong.join('<div class="dash"></div>') : '<div class="empty">' + (nds.length ? 'Không có nhân viên nào.' : 'Tạo công trình / nhóm trước ở tab Công trình.') + '</div>') + '</div>');
+  var $t = document.getElementById('dsTim'); $t.oninput = function () { DSNV.tim = $t.value; ve(); var e = document.getElementById('dsTim'); e.focus(); e.setSelectionRange(DSNV.tim.length, DSNV.tim.length); };
+  var $n = document.getElementById('dsNhom'); if ($n) $n.onchange = function () { DSNV.nhom = $n.value; ve(); };
+  $bottom(nds.length ? '<button class="fab" onclick="suaNV(null,\'' + (DSNV.nhom || nds[0].id) + '\')">＋</button>' : '', true);
+}
+/* ---------- Tab Thu chi: tổng hợp mọi công trình ---------- */
+function veTongTC() {
+  var nds = nhomDS(), T = { hopDong: 0, thu: 0, tongChi: 0, lai: 0, dangGiu: 0 };
+  var dong = nds.map(function (g) {
+    var r = tinhCT(g); ['hopDong', 'thu', 'tongChi', 'lai', 'dangGiu'].forEach(function (k) { T[k] += r[k] || 0; });
+    return '<button class="grp" onclick="S.tab=\'tc\';di(\'nhom/' + g.id + '\')"><div class="t"><b>' + esc(g.ten) + '</b>' + (r.td !== null ? '<div style="margin:6px 0 2px">' + thanhTD(r.td, 'var(--blue)') + '</div>' : '') +
+      '<small>' + (r.td !== null ? 'Tiến độ ' + Math.round(r.td) + '% · ' : '') + 'Thu ' + tienGon(r.thu) + (r.hopDong ? '/' + tienGon(r.hopDong) : '') + ' · Chi ' + tienGon(r.tongChi) + (r.dangGiu > 0 ? ' · ứng VT ' + tienGon(r.dangGiu) : '') + '</small></div>' +
+      '<div style="text-align:right;flex:none"><b class="' + (r.lai < 0 ? 'red' : 'green') + '">' + (db.cfg.an ? '***' : tienGon(r.lai)) + '</b><br><small class="muted">lãi tạm</small></div></button>';
+  });
+  var kv = function (t, v, c) { return '<div class="kv" style="padding:10px 18px"><span>' + t + '</span><b class="' + (c || '') + '">' + v + '</b></div>'; };
+  $app('<div class="hdr"><h1>Thu chi</h1>' + nutMat() + '</div>' +
+    '<div class="card">' + (T.hopDong ? kv('Tổng giá trị hợp đồng', tien(T.hopDong), 'blue') : '') + kv('Đã thu', tien(T.thu), 'green') + kv('Tổng chi phí (cả tiền công)', tienAn(T.tongChi), 'red') +
+    '<div class="dash"></div>' + kv('<b>Lãi tạm tính</b>', db.cfg.an ? '*,***,*** đ' : tien(T.lai), T.lai < 0 ? 'red' : 'green') + (T.dangGiu > 0 ? kv('Tạm ứng vật tư đang giữ', tien(T.dangGiu), 'red') : '') + '</div>' +
+    '<div class="sec"><h3>THEO CÔNG TRÌNH</h3></div><div class="card list">' + (dong.length ? dong.join('<div class="dash"></div>') : '<div class="empty">Chưa có công trình.</div>') + '</div>' +
+    '<button class="btn gray" style="width:100%" onclick="moDanhMuc()">🗂️ Hạng mục thu chi</button>');
+  $bottom('');
 }
 
 /* ---------- Trang chủ: danh sách nhóm ---------- */
@@ -328,7 +399,7 @@ function veHome() {
     var ds = nvCua(g.id), con = 0, daCham = 0;
     ds.forEach(function (n) { con += tinh(n, null).conLai; if (getCong(n.id, homNay())) daCham++; });
     tong += con;
-    return '<button class="grp" onclick="di(\'nhom/' + g.id + '\')"><div class="av" style="background:var(--blue)">' + esc(g.ten.trim()[0] || '?').toUpperCase() + '</div><div class="t"><b>' + esc(g.ten) + '</b><small>' + ds.length + ' nhân viên · đã chấm hôm nay ' + daCham + '/' + ds.length + '</small>' + (function () { var r = tinhCT(g); if (r.td === null && !r.hopDong && !r.thu && !r.tongChi) return ''; return (r.td !== null ? '<div style="margin-top:6px">' + thanhTD(r.td, 'var(--blue)') + '</div>' : '') + '<small>' + (r.td !== null ? 'Tiến độ ' + Math.round(r.td) + '% · ' : '') + 'Thu ' + tienGon(r.thu) + (r.hopDong ? '/' + tienGon(r.hopDong) : '') + ' · Chi ' + tienGon(r.tongChi) + (r.dangGiu > 0 ? ' · ứng VT ' + tienGon(r.dangGiu) : '') + '</small>'; })() + '</div><span class="muted">›</span></button>';
+    return '<button class="grp" onclick="di(\'nhom/' + g.id + '\')"><div class="av" style="background:var(--blue)">' + esc(g.ten.trim()[0] || '?').toUpperCase() + '</div><div class="t"><b>' + esc(g.ten) + '</b><small>' + ds.length + ' nhân viên · đã chấm hôm nay ' + daCham + '/' + ds.length + '</small>' + (function () { var r = tinhCT(g); if (r.td === null && !r.hopDong && !r.thu && !r.tongChi) return ''; return (r.td !== null ? '<div style="margin-top:6px">' + thanhTD(r.td, 'var(--blue)') + '</div>' : '<br>') + '<small>' + (r.td !== null ? 'Tiến độ ' + Math.round(r.td) + '% · ' : '') + 'Thu ' + tienGon(r.thu) + (r.hopDong ? '/' + tienGon(r.hopDong) : '') + ' · Chi ' + tienGon(r.tongChi) + (r.dangGiu > 0 ? ' · ứng VT ' + tienGon(r.dangGiu) : '') + '</small>'; })() + '</div><span class="muted">›</span></button>';
   });
   $app('<div class="hdr"><h1>Chấm công</h1><button class="ic" title="Thông tin phần mềm" onclick="moThongTin()">ⓘ</button>' + (KHOA.coKhoa() ? '<button class="ic" title="Khóa ngay" onclick="KHOA.khoaNgay()">🔒</button>' : '') + '<button class="ic" onclick="moCaiDat()">⚙️</button></div>' +
     '<div class="card"><div class="pad"><span class="muted">Tổng chưa thanh toán</span><div style="display:flex;align-items:center;gap:10px;margin-top:6px"><b class="green" style="font-size:26px">' + tienAn(tong) + '</b>' + nutMat() + '</div></div></div>' +
@@ -463,7 +534,7 @@ function veNV(nv) {
     cal += '<button class="day ' + cls + (ngay === hn ? ' today' : '') + '" onclick="moNgay(\'' + nv.id + '\',\'' + ngay + '\')"><span class="s">' + d + '</span>' + (db.cfg.amLich ? '<span class="l">' + alTxt + '</span>' : '') + (mk ? '<span class="mk">' + mk + '</span>' : '') + '</button>';
   }
   var gds = db.gd.filter(function (x) { return !x.xoa && x.nvId === nv.id && kyGD(x) === th; }).sort(function (a, b) { return a.ngay < b.ngay ? 1 : -1; });
-  $app('<div class="hdr"><button class="ic back" onclick="di(\'nhom/' + nv.nhomId + '\')">‹</button><h1>' + esc(nv.ten) + ' - ' + esc(g.ten) + '</h1><button class="ic" title="Hồ sơ nhân viên" onclick="moHoSo(\'' + nv.id + '\')">👤</button></div>' +
+  $app('<div class="hdr"><button class="ic back" onclick="if(S.tuDS)history.back();else di(\'nhom/' + nv.nhomId + '\')">‹</button><h1>' + esc(nv.ten) + ' - ' + esc(g.ten) + '</h1><button class="ic" title="Hồ sơ nhân viên" onclick="moHoSo(\'' + nv.id + '\')">👤</button></div>' +
     (nv.tamNgung ? '<div class="card pad" style="background:#fff3e0">Nhân viên đang <b>tạm ngừng</b>. <button class="btn g" style="flex:none;padding:8px 12px;font-size:15px" onclick="tamNgung(\'' + nv.id + '\')">Kích hoạt lại</button></div>' : '') +
     '<div class="card"><div class="pad"><span class="muted">Tổng chưa thanh toán</span><div style="display:flex;align-items:center;gap:10px;margin-top:6px"><b class="green" style="font-size:24px">' + tienAn(all.conLai) + '</b>' + nutMat() + '</div></div><div class="dash"></div>' +
     '<div class="acts">' + ['ung', 'tangca', 'phucap', 'tru'].map(function (k) { return '<button class="act" onclick="moGD(\'' + nv.id + '\',\'' + k + '\')"><i>' + LOAI_GD[k].ic + '</i>' + LOAI_GD[k].ten + '</button>'; }).join('') +
@@ -982,7 +1053,7 @@ function suaNV(id, nhomId) {
     '<div class="row"><div><label>Lương 1 ngày công (đ)</label><input id="nvLuong" inputmode="numeric" value="' + (n ? (+n.luongNgay || 0).toLocaleString('en-US') : '') + '" placeholder="600,000"></div><div><label>Tăng ca 1 giờ (đ)</label><input id="nvTC" inputmode="numeric" value="' + (n && n.luongTCGio ? (+n.luongTCGio).toLocaleString('en-US') : '') + '" placeholder="= lương ngày ÷ 8"></div></div>' +
     '<div class="row"><div><label>Mã NV (đăng nhập)</label><input id="nvMa" autocapitalize="characters" value="' + esc(n && n.ma ? n.ma : maMoi()) + '"></div><div><label>Mã PIN</label><input id="nvPin" inputmode="numeric" value="' + esc(n && n.pin ? n.pin : pinMoi()) + '"></div></div>' +
     (n ? '<button class="btn b" style="width:100%;margin-top:10px" onclick="guiNV(\'' + n.id + '\')">📲 Gửi link cài app cho nhân viên</button>' : '') +
-    (n ? '<label>Nhóm</label><select id="nvNhom">' + nhomDS().map(function (g) { return '<option value="' + g.id + '"' + (g.id === n.nhomId ? ' selected' : '') + '>' + esc(g.ten) + '</option>'; }).join('') + '</select>' : '') +
+    '<label>Công trình / nhóm</label><select id="nvNhom">' + nhomDS().map(function (g) { return '<option value="' + g.id + '"' + (g.id === (n ? n.nhomId : nhomId) ? ' selected' : '') + '>' + esc(g.ten) + '</option>'; }).join('') + '</select>' +
     '<div class="btns">' + (n ? '<button class="btn red" id="nvXoa">Xóa</button>' : '<button class="btn gray" onclick="dongSheet()">Hủy</button>') + '<button class="btn p" id="nvLuu">Lưu</button></div>');
   ['nvLuong', 'nvTC'].forEach(function (k) { var e = document.getElementById(k); e.oninput = function () { var v = soTien(e.value); e.value = v ? v.toLocaleString('en-US') : ''; }; });
   if (!n) document.getElementById('nvTen').focus();
@@ -995,7 +1066,7 @@ function suaNV(id, nhomId) {
     if (!ma || !pin) return toast('Nhập mã NV và PIN');
     if (db.nv.some(function (x) { return !x.xoa && x !== n && String(x.ma || '').toUpperCase() === ma; })) return toast('Mã ' + ma + ' đã có người dùng');
     o.ma = ma; o.pin = pin;
-    if (n) o.nhomId = document.getElementById('nvNhom').value;
+    o.nhomId = document.getElementById('nvNhom').value || o.nhomId;
     o.upd = now(); if (!n) db.nv.push(o);
     luu(); dongSheet(); toast('✓ Đã lưu'); ve();
   };
@@ -1476,7 +1547,7 @@ var KHOA = (function () {
 })();
 
 /* ======================= THÔNG TIN PHẦN MỀM ======================= */
-var PHIEN_BAN = '1.0.8', NGAY_PB = '24/11/2026', HOTLINE = '0911337373';
+var PHIEN_BAN = '1.0.9', NGAY_PB = '24/11/2026', HOTLINE = '0911337373';
 function moThongTin() {
   var la = VAI === 'nv', kb = 0;
   try { kb = ((lsGet(KEY) || '').length / 1024).toFixed(1).replace('.', ','); } catch (e) {}
