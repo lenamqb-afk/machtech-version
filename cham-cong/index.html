@@ -251,7 +251,7 @@ function tinh(nv, th) {
   });
   r.luong = r.cong * tien1;
   db.gd.forEach(function (g) {
-    if (g.xoa || g.nvId !== nv.id || (th && g.ngay.slice(0, 7) !== th)) return;
+    if (g.xoa || g.nvId !== nv.id || (th && kyGD(g) !== th)) return;
     r[g.loai] += +g.tien || 0;
     if (g.loai === 'tangca') r.ngayTC[g.ngay] = 1;
   });
@@ -415,7 +415,7 @@ function veNV(nv) {
     var mk = (r.ngayTC[ngay] ? '＋' : '') + (cc && cc.gc ? 'ⓘ' : '') + (thanhToanNgay[ngay] ? '$' : '');
     cal += '<button class="day ' + cls + (ngay === hn ? ' today' : '') + '" onclick="moNgay(\'' + nv.id + '\',\'' + ngay + '\')"><span class="s">' + d + '</span>' + (db.cfg.amLich ? '<span class="l">' + alTxt + '</span>' : '') + (mk ? '<span class="mk">' + mk + '</span>' : '') + '</button>';
   }
-  var gds = db.gd.filter(function (x) { return !x.xoa && x.nvId === nv.id && x.ngay.slice(0, 7) === th; }).sort(function (a, b) { return a.ngay < b.ngay ? 1 : -1; });
+  var gds = db.gd.filter(function (x) { return !x.xoa && x.nvId === nv.id && kyGD(x) === th; }).sort(function (a, b) { return a.ngay < b.ngay ? 1 : -1; });
   $app('<div class="hdr"><button class="ic back" onclick="di(\'nhom/' + nv.nhomId + '\')">‹</button><h1>' + esc(nv.ten) + ' - ' + esc(g.ten) + '</h1><button class="ic" onclick="suaNV(\'' + nv.id + '\')">👤</button></div>' +
     (nv.tamNgung ? '<div class="card pad" style="background:#fff3e0">Nhân viên đang <b>tạm ngừng</b>. <button class="btn g" style="flex:none;padding:8px 12px;font-size:15px" onclick="tamNgung(\'' + nv.id + '\')">Kích hoạt lại</button></div>' : '') +
     '<div class="card"><div class="pad"><span class="muted">Tổng chưa thanh toán</span><div style="display:flex;align-items:center;gap:10px;margin-top:6px"><b class="green" style="font-size:24px">' + tienAn(all.conLai) + '</b>' + nutMat() + '</div></div><div class="dash"></div>' +
@@ -480,7 +480,69 @@ function chamThangNhanh(nvId) {
 }
 
 /* ---------- Giao dịch tiền ---------- */
+function kyGD(g) { return g.ky || g.ngay.slice(0, 7); }
+function thangsCua(nv) {
+  var m = {};
+  Object.keys(db.cong).forEach(function (k) { var i = k.indexOf('|'); if (k.slice(0, i) === nv.id) m[k.slice(i + 1, i + 8)] = 1; });
+  (db.cc || []).forEach(function (x) { if (!x.xoa && x.nvId === nv.id) m[x.ngay.slice(0, 7)] = 1; });
+  db.gd.forEach(function (x) { if (!x.xoa && x.nvId === nv.id) m[kyGD(x)] = 1; });
+  return Object.keys(m).sort();
+}
+/* Thanh toán: tự tính tổng lương − tạm ứng − trừ − đã trả = còn phải trả */
+function moThanhToan(nvId) {
+  var nv = timNV(nvId), ky = S.th;
+  function ve2() {
+    var r = ky === 'tat' ? tinh(nv, null) : tinh(nv, ky), con = Math.max(0, Math.round(r.conLai));
+    var tenKy = ky === 'tat' ? 'tất cả các tháng' : 'tháng ' + (+ky.slice(5)) + '/' + ky.slice(0, 4);
+    var dong = function (t, v, cls) { return '<div style="display:flex;justify-content:space-between;padding:7px 0;font-size:16px"><span>' + t + '</span><b class="' + (cls || '') + '">' + v + '</b></div>'; };
+    sheet('<h2>✅ Thanh toán · ' + esc(nv.ten) + '</h2>' +
+      '<div class="seg" style="margin:0 0 12px">' + [[S.th, 'Tháng ' + (+S.th.slice(5))], ['tat', 'Tất cả còn nợ']].map(function (t) { return '<button data-ky="' + t[0] + '" class="' + (ky === t[0] ? 'on' : '') + '">' + t[1] + '</button>'; }).join('') + '</div>' +
+      '<div style="background:#f7f8fb;border-radius:14px;padding:6px 14px">' +
+      dong('Công ' + soCong(r.cong) + ' × ' + tien(nv.luongNgay), tien(r.luong)) +
+      (r.tangca ? dong('+ Tăng ca', tien(r.tangca)) : '') + (r.phucap ? dong('+ Phụ cấp', tien(r.phucap)) : '') +
+      '<div class="dash"></div>' + dong('Tổng lương', tien(r.tong), 'blue') +
+      dong('− Tạm ứng', (r.ung ? '−' : '') + tien(r.ung), 'red') + (r.tru ? dong('− Trừ tiền', '−' + tien(r.tru), 'red') : '') +
+      (r.thanhtoan ? dong('− Đã trả trước', '−' + tien(r.thanhtoan), 'red') : '') +
+      '<div class="dash"></div>' + dong('<b>Còn phải trả</b>', '<span style="font-size:22px">' + tien(r.conLai) + '</span>', r.conLai < 0 ? 'red' : 'green') + '</div>' +
+      (r.conLai < 0 ? '<p class="red" style="font-size:14px">Đã ứng/trả nhiều hơn lương ' + tien(-r.conLai) + '.</p>' : '') +
+      '<div class="row"><div><label>Ngày trả</label><input id="ttNgay" type="date" value="' + homNay() + '"></div><div><label>Số tiền trả (đ)</label><input id="ttTien" inputmode="numeric" value="' + (con ? con.toLocaleString('en-US') : '') + '"></div></div>' +
+      '<div id="ttConNo" style="font-size:14px;margin-top:6px"></div>' +
+      '<label>Ghi chú</label><input id="ttGc" value="' + esc('Lương ' + tenKy) + '">' +
+      '<button class="btn gray" style="width:100%;margin-top:14px" id="ttGui">📤 Gửi bảng lương cho nhân viên</button>' +
+      '<div class="btns"><button class="btn gray" onclick="dongSheet()">Hủy</button><button class="btn g" id="ttOk">Thanh toán</button></div>');
+    document.querySelectorAll('.sheet .seg button').forEach(function (b) { b.onclick = function () { ky = b.dataset.ky; ve2(); }; });
+    var $t = document.getElementById('ttTien'), $n = document.getElementById('ttConNo');
+    var capNhat = function () {
+      var t = soTien($t.value), du = Math.round(r.conLai) - t;
+      $n.innerHTML = !t ? '' : du > 0 ? '<span style="color:#e65100">Trả một phần. Còn nợ lại <b>' + tien(du) + '</b></span>' : du < 0 ? '<span class="red">Trả dư ' + tien(-du) + ' (tính như ứng trước kỳ sau)</span>' : '<span class="green">✓ Trả đủ, hết nợ ' + tenKy + '</span>';
+    };
+    $t.oninput = function () { var v = soTien($t.value); $t.value = v ? v.toLocaleString('en-US') : ''; capNhat(); }; capNhat();
+    document.getElementById('ttGui').onclick = function () {
+      var txt = 'BẢNG LƯƠNG ' + tenKy.toUpperCase() + '\n' + nv.ten + (timNhom(nv.nhomId) ? ' - ' + timNhom(nv.nhomId).ten : '') +
+        '\nSố công: ' + soCong(r.cong) + ' × ' + tien(nv.luongNgay) + ' = ' + tien(r.luong) +
+        (r.tangca ? '\nTăng ca: +' + tien(r.tangca) : '') + (r.phucap ? '\nPhụ cấp: +' + tien(r.phucap) : '') +
+        '\nTổng lương: ' + tien(r.tong) + '\nTạm ứng: −' + tien(r.ung) + (r.tru ? '\nTrừ tiền: −' + tien(r.tru) : '') + (r.thanhtoan ? '\nĐã trả trước: −' + tien(r.thanhtoan) : '') +
+        '\nCÒN NHẬN: ' + tien(r.conLai);
+      if (navigator.share) navigator.share({ text: txt }).catch(function () {});
+      else if (navigator.clipboard) navigator.clipboard.writeText(txt).then(function () { toast('Đã copy, dán vào Zalo'); });
+    };
+    document.getElementById('ttOk').onclick = function () {
+      var t = soTien($t.value); if (!t) return toast('Nhập số tiền trả');
+      var ngay = document.getElementById('ttNgay').value || homNay(), gc = document.getElementById('ttGc').value.trim();
+      var them = function (tien1, k) { db.gd.push({ id: uid(), nvId: nvId, loai: 'thanhtoan', ngay: ngay, ky: k, tien: tien1, gc: gc, upd: now() }); };
+      if (ky !== 'tat') them(t, ky);
+      else { // chia vào các tháng còn nợ, tháng cũ trước
+        var con2 = t;
+        thangsCua(nv).forEach(function (m) { if (con2 <= 0) return; var no = Math.round(tinh(nv, m).conLai); if (no > 0) { var tra = Math.min(no, con2); them(tra, m); con2 -= tra; } });
+        if (con2 > 0) them(con2, thangNay());
+      }
+      luu(); dongSheet(); toast('✓ Đã thanh toán ' + tien(t) + ' cho ' + nv.ten); ve();
+    };
+  }
+  ve2();
+}
 function moGD(nvId, loai, id, ngayMacDinh) {
+  if (loai === 'thanhtoan' && !id) return moThanhToan(nvId);
   var nv = timNV(nvId), x = id ? db.gd.find(function (q) { return q.id === id; }) : null, L = LOAI_GD[loai];
   var giaTC = +nv.luongTCGio || Math.round((+nv.luongNgay || 0) / 8);
   if (loai === 'thanhtoan' && !x) { var con = tinh(nv, null).conLai; }
@@ -658,7 +720,7 @@ function xuatExcel(gid, chiNV) {
   });
   s2.push(['', 'TỔNG CỘNG', ''].concat(T).concat(['']));
   var s3 = [['Ngày', 'Họ tên', 'Loại', 'Số giờ', 'Số tiền', 'Ghi chú']];
-  db.gd.filter(function (x) { return !x.xoa && x.ngay.slice(0, 7) === th && ds.some(function (nv) { return nv.id === x.nvId; }); }).sort(function (a, b) { return a.ngay < b.ngay ? -1 : 1; })
+  db.gd.filter(function (x) { return !x.xoa && kyGD(x) === th && ds.some(function (nv) { return nv.id === x.nvId; }); }).sort(function (a, b) { return a.ngay < b.ngay ? -1 : 1; })
     .forEach(function (x) { s3.push([dmy(x.ngay), timNV(x.nvId).ten, LOAI_GD[x.loai].ten, x.gio || '', +x.tien, x.gc || '']); });
   var s4 = [['Ngày', 'Họ tên', 'Ghi chú']];
   ds.forEach(function (nv) { for (var d = 1; d <= n; d++) { var c = getCong(nv.id, th + '-' + p2(d)); if (c && c.gc) s4.push([dmy(th + '-' + p2(d)), nv.ten, c.gc]); } });

@@ -10,6 +10,7 @@ App chạy trên Safari của iPhone, thêm ra màn hình chính như một app 
 - **Lịch tháng** có **ngày âm lịch**: bấm vào ô ngày để chọn Đi làm, 1/2 ngày, Nghỉ có lý do, Nghỉ không lý do, Nghỉ có lương, ghi chú, tăng ca.
 - **Tiền công**: lương 1 ngày công × số công + tăng ca + phụ cấp − ứng lương − trừ tiền − đã thanh toán = **còn chưa nhận**.
 - **Ứng lương, Tăng ca (theo giờ), Phụ cấp, Trừ tiền, Thanh toán**: mỗi khoản có ngày, số tiền, ghi chú; sửa/xóa được.
+- **Thanh toán** tự tính: công × lương ngày + tăng ca + phụ cấp − tạm ứng − trừ tiền − đã trả trước = **còn phải trả**, điền sẵn số tiền. Trả theo tháng hoặc "Tất cả còn nợ" (tự chia vào các tháng cũ trước). Trả thiếu thì app báo còn nợ lại bao nhiêu. Có nút gửi bảng lương cho nhân viên qua Zalo.
 - **Tạm ngừng** nhân viên nghỉ việc (giữ lịch sử).
 - **Ẩn/hiện số tiền** (nút con mắt).
 - **Xuất Excel** theo nhóm hoặc theo 1 người: Bảng công (X, ½, P, K, L từng ngày), Bảng tiền công có cột Ký nhận, danh sách ứng/tăng ca/thanh toán, ghi chú.
