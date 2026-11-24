@@ -1,0 +1,26 @@
+{
+  "name": "cham-cong-machtech",
+  "version": "1.0.2",
+  "private": true,
+  "description": "Chấm Công MachTech - bản app iOS/Android (Capacitor) bọc thư mục ../cham-cong",
+  "scripts": {
+    "www": "node scripts/build-www.js",
+    "sync": "npm run www && npx cap sync",
+    "icons": "npx capacitor-assets generate --ios --android --iconBackgroundColor '#6d4aff' --splashBackgroundColor '#eef3f7'"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.6.2",
+    "@capacitor/core": "^8.6.2",
+    "@capacitor/filesystem": "^8.1.5",
+    "@capacitor/geolocation": "^8.2.5",
+    "@capacitor/ios": "^8.6.2",
+    "@capacitor/share": "^8.0.3",
+    "@capacitor/splash-screen": "^8.0.2",
+    "@capacitor/status-bar": "^8.0.4",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^4.0.0",
+    "@capacitor/cli": "^8.6.2"
+  }
+}

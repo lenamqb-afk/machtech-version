@@ -1,0 +1,82 @@
+# Build "Chấm Công MachTech" for iOS (App Store / TestFlight) and Android.
+# iOS upload needs these repository secrets (Settings > Secrets and variables > Actions):
+#   ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8 (contents of the AuthKey_XXXX.p8 file), APPLE_TEAM_ID
+# Without them the job only checks that the iOS project compiles.
+name: Cham Cong app
+
+on:
+  workflow_dispatch:
+    inputs:
+      upload:
+        description: 'Gửi bản iOS lên App Store Connect (TestFlight)'
+        type: boolean
+        default: false
+  push:
+    branches: [cham-cong, claude/project-thread-h8p7vn]
+    paths: ['cham-cong/**', 'app-store/**', '.github/workflows/cham-cong-app.yml']
+
+concurrency: { group: cham-cong-app-${{ github.ref }}, cancel-in-progress: true }
+
+jobs:
+  ios:
+    runs-on: macos-15
+    defaults: { run: { working-directory: app-store } }
+    env:
+      HAS_KEY: ${{ secrets.ASC_KEY_P8 != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: app-store/package-lock.json }
+      - run: npm ci
+      - run: npm run www && npx cap sync ios
+      - name: Compile check (no signing)
+        if: env.HAS_KEY != 'true' || inputs.upload != true
+        run: |
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO build | tail -30
+      - name: Archive and upload to App Store Connect
+        if: env.HAS_KEY == 'true' && inputs.upload == true
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          TEAM: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          KEY="$RUNNER_TEMP/AuthKey.p8"; printf '%s' "$ASC_KEY_P8" > "$KEY"
+          AUTH=(-allowProvisioningUpdates -authenticationKeyPath "$KEY" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID")
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            DEVELOPMENT_TEAM="$TEAM" CODE_SIGN_STYLE=Automatic CURRENT_PROJECT_VERSION=${{ github.run_number }} \
+            "${AUTH[@]}" archive | tail -30
+          cat > "$RUNNER_TEMP/export.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>$TEAM</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>manageAppVersionAndBuildNumber</key><false/>
+          </dict></plist>
+          PLIST
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/export.plist" -exportPath "$RUNNER_TEMP/out" "${AUTH[@]}"
+          rm -f "$KEY"
+
+  android:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: app-store } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: app-store/package-lock.json }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21 }
+      - run: npm ci
+      - run: npm run www && npx cap sync android
+      - run: cd android && ./gradlew assembleDebug --no-daemon -q
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ChamCong-Android-apk
+          path: app-store/android/app/build/outputs/apk/debug/app-debug.apk

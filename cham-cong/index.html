@@ -152,6 +152,39 @@ function now() { return Date.now(); }
 function uid() { return now().toString(36) + Math.random().toString(36).slice(2, 7); }
 function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
 function lsSet(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } }
+
+/* ===== Chạy trong app App Store (Capacitor) hay trên web ===== */
+var NATIVE = !!(window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform());
+var WEB_URL = 'https://raw.githack.com/lenamqb-afk/machtech-version/cham-cong/cham-cong/index.html';
+var CP = {};
+if (NATIVE && window.capacitorExports) ['Geolocation', 'Share', 'Filesystem'].forEach(function (n) { CP[n] = capacitorExports.registerPlugin(n); });
+/* Định vị: trong app dùng GPS gốc của máy, trên web dùng trình duyệt */
+var GEO = !NATIVE ? navigator.geolocation : {
+  getCurrentPosition: function (ok, loi, o) {
+    CP.Geolocation.getCurrentPosition(o || {}).then(ok, function (e) { loi && loi({ code: /denied|permission/i.test(String(e && e.message)) ? 1 : 2, message: String(e && e.message) }); });
+  },
+  watchPosition: function (ok, loi, o) {
+    CP.Geolocation.watchPosition(o || {}, function (p, e) { if (e || !p) { loi && loi({ code: 2 }); } else ok(p); });
+  }
+};
+function chiaSe(txt, xong) {
+  if (NATIVE && CP.Share) return CP.Share.share({ text: txt }).catch(function () {});
+  if (navigator.share) return navigator.share({ text: txt }).catch(function () {});
+  if (navigator.clipboard) return navigator.clipboard.writeText(txt).then(function () { toast(xong || 'Đã copy, dán vào Zalo'); }, function () { prompt('Copy nội dung này:', txt); });
+  prompt('Copy nội dung này:', txt);
+}
+/* Lưu file: trong app ghi tạm rồi mở bảng Chia sẻ (Lưu vào Tệp, Zalo, Mail…) */
+function luuFile(ten, b64, mime) {
+  if (NATIVE && CP.Filesystem && CP.Share) {
+    return CP.Filesystem.writeFile({ path: ten, data: b64, directory: 'CACHE' })
+      .then(function (r) { return CP.Share.share({ title: ten, files: [r.uri] }); })
+      .catch(function (e) { if (!/cancel/i.test(String(e && e.message))) toast('Không lưu được file'); });
+  }
+  var bin = atob(b64), u = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+  var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([u], { type: mime }));
+  a.download = ten; document.body.appendChild(a); a.click(); a.remove();
+}
+function b64Chu(t) { return btoa(unescape(encodeURIComponent(t))); }
 function moi() { return { v: 1, nhom: [], nv: [], cong: {}, gd: [], cc: [], tc: [], hm: [], cfg: { an: true, amLich: true, mayChu: '', khoa: '', dongBoLuc: 0 } }; }
 var db = (function () { try { var d = JSON.parse(lsGet(KEY)); if (d && d.v) return Object.assign(moi(), d, { cfg: Object.assign(moi().cfg, d.cfg) }); } catch (e) {} return moi(); })();
 var hen = null;
@@ -271,7 +304,7 @@ function cong(a, b) { Object.keys(b).forEach(function (k) { if (typeof b[k] === 
 var S = { th: thangNay(), tab: 'cham', tim: '', chiTiet: false, chiTietNV: false };
 function route() { var h = location.hash.slice(1).split('/'); return { v: h[0] || 'home', id: h[1] || '' }; }
 function di(h) { location.hash = h; }
-window.addEventListener('hashchange', function () { if (VAI === 'nv') return; S.chiTiet = S.chiTietNV = false; S.tim = ''; ve(); window.scrollTo(0, 0); });
+window.addEventListener('hashchange', function () { if (VAI !== 'ql') return; S.chiTiet = S.chiTietNV = false; S.tim = ''; ve(); window.scrollTo(0, 0); });
 
 function ve() {
   var r = route();
@@ -530,8 +563,7 @@ function moThanhToan(nvId) {
         (r.tangca ? '\nTăng ca: +' + tien(r.tangca) : '') + (r.phucap ? '\nPhụ cấp: +' + tien(r.phucap) : '') +
         '\nTổng lương: ' + tien(r.tong) + '\nTạm ứng: −' + tien(r.ung) + (r.tru ? '\nTrừ tiền: −' + tien(r.tru) : '') + (r.thanhtoan ? '\nĐã trả trước: −' + tien(r.thanhtoan) : '') +
         '\nCÒN NHẬN: ' + tien(r.conLai);
-      if (navigator.share) navigator.share({ text: txt }).catch(function () {});
-      else if (navigator.clipboard) navigator.clipboard.writeText(txt).then(function () { toast('Đã copy, dán vào Zalo'); });
+      chiaSe(txt);
     };
     document.getElementById('ttOk').onclick = function () {
       var t = soTien($t.value); if (!t) return toast('Nhập số tiền trả');
@@ -769,8 +801,8 @@ function suaNhom(id) {
   var $hd = document.getElementById('nhHD'); $hd.oninput = function () { var v = soTien($hd.value); $hd.value = v ? v.toLocaleString('en-US') : ''; };
   document.getElementById('nhGPS').onclick = function () {
     var m = document.getElementById('nhGPSmsg'); m.textContent = 'Đang lấy vị trí…';
-    if (!navigator.geolocation) { m.textContent = 'Máy không hỗ trợ định vị'; return; }
-    navigator.geolocation.getCurrentPosition(function (p) {
+    if (!GEO) { m.textContent = 'Máy không hỗ trợ định vị'; return; }
+    GEO.getCurrentPosition(function (p) {
       document.getElementById('nhLat').value = p.coords.latitude.toFixed(6); document.getElementById('nhLng').value = p.coords.longitude.toFixed(6);
       m.textContent = 'Đã lấy vị trí (sai số ±' + Math.round(p.coords.accuracy) + ' m). Bấm Lưu.';
     }, function (e) { m.textContent = e.code === 1 ? 'Chưa cho phép vị trí: Cài đặt › Quyền riêng tư › Dịch vụ định vị.' : 'Không lấy được vị trí, thử ra chỗ thoáng.'; },
@@ -799,7 +831,7 @@ function maMoi() {
 }
 function pinMoi() { return String(1000 + Math.floor(Math.random() * 9000)); }
 function linkNV(n) {
-  return location.origin + location.pathname + '?nv=1&may=' + encodeURIComponent(db.cfg.mayChu || '') + '&ma=' + encodeURIComponent(n.ma || '');
+  return (NATIVE ? WEB_URL : location.origin + location.pathname) + '?nv=1&may=' + encodeURIComponent(db.cfg.mayChu || '') + '&ma=' + encodeURIComponent(n.ma || '');
 }
 function guiNV(id) {
   var n = timNV(id), g = timNhom(n.nhomId) || {};
@@ -807,9 +839,7 @@ function guiNV(id) {
   if (!n.ma || !n.pin) { if (!n.ma) n.ma = maMoi(); if (!n.pin) n.pin = pinMoi(); n.upd = now(); luu(); dongBo(true); }
   var txt = 'Chào ' + n.ten + ', cài app chấm công ' + (g.ten ? '(' + g.ten + ') ' : '') + 'như sau:\n1. Mở link bằng Safari (iPhone) hoặc Chrome (Android):\n' + linkNV(n) +
     '\n2. iPhone: bấm Chia sẻ › Thêm vào MH chính. Android: menu ⋮ › Thêm vào màn hình chính.\n3. Mở app từ màn hình chính, đăng nhập:\nMã NV: ' + n.ma + '\nMã PIN: ' + n.pin + '\n4. Cho phép app dùng vị trí. Tới công trình bấm VÀO CA, về bấm RA CA.';
-  if (navigator.share) navigator.share({ text: txt }).catch(function () {});
-  else if (navigator.clipboard) navigator.clipboard.writeText(txt).then(function () { toast('Đã copy, dán vào Zalo gửi nhân viên'); }, function () { prompt('Copy nội dung này:', txt); });
-  else prompt('Copy nội dung này:', txt);
+  chiaSe(txt, 'Đã copy, dán vào Zalo gửi nhân viên');
 }
 function suaNV(id, nhomId) {
   var n = id ? timNV(id) : null;
@@ -852,6 +882,7 @@ function moCaiDat() {
     '<h2 style="margin-top:22px">☁️ Đồng bộ nhiều máy (Google, miễn phí)</h2><p class="muted" style="margin-top:-6px;font-size:14px">Dán địa chỉ máy chủ Google Apps Script (xem hướng dẫn). Mọi iPhone dùng cùng địa chỉ + mã bí mật sẽ thấy cùng dữ liệu.</p>' +
     '<label>Địa chỉ máy chủ</label><input id="cdMay" value="' + esc(db.cfg.mayChu) + '" placeholder="https://script.google.com/macros/s/.../exec">' +
     '<label>Mã bí mật</label><input id="cdKhoa" value="' + esc(db.cfg.khoa) + '" placeholder="giống mã trong Code.gs">' +
+    (NATIVE ? '<p style="text-align:center;margin:14px 0 0"><button class="btn gray" onclick="if(confirm(\'Chuyển máy này sang chế độ nhân viên? Dữ liệu quản lý vẫn giữ trong máy.\'))doiVaiTro()">👷 Dùng máy này cho nhân viên</button></p>' : '') +
     '<div class="btns"><button class="btn gray" onclick="dongSheet()">Đóng</button><button class="btn p" id="cdLuu">Lưu & đồng bộ</button></div>');
   document.getElementById('cdLuu').onclick = function () {
     db.cfg.mayChu = document.getElementById('cdMay').value.trim(); db.cfg.khoa = document.getElementById('cdKhoa').value.trim(); luu(); dongSheet();
@@ -859,8 +890,7 @@ function moCaiDat() {
   };
 }
 function saoLuu() {
-  var b = new Blob([JSON.stringify(db)], { type: 'application/json' }), a = document.createElement('a');
-  a.href = URL.createObjectURL(b); a.download = 'cham-cong-sao-luu-' + homNay() + '.json'; document.body.appendChild(a); a.click(); a.remove();
+  luuFile('cham-cong-sao-luu-' + homNay() + '.json', b64Chu(JSON.stringify(db)), 'application/json');
 }
 function khoiPhuc(f) {
   if (!f) return; var r = new FileReader();
@@ -948,7 +978,7 @@ function xuatExcel(gid, chiNV) {
   }
   if (s4.length > 1) { var w4 = XLSX.utils.aoa_to_sheet(s4); w4['!cols'] = [{ wch: 11 }, { wch: 22 }, { wch: 40 }]; XLSX.utils.book_append_sheet(wb, w4, 'Ghi chú'); }
   var ten = (chiNV ? ds[0].ten + '-' : '') + g.ten + '-' + th;
-  XLSX.writeFile(wb, 'ChamCong-' + ten.replace(/[\\/:*?"<>|]/g, '') + '.xlsx');
+  luuFile('ChamCong-' + ten.replace(/[\\/:*?"<>|]/g, '') + '.xlsx', XLSX.write(wb, { type: 'base64', bookType: 'xlsx' }), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 }
 
 /* ---------- khung hiển thị ---------- */
@@ -980,17 +1010,29 @@ var NV = (function () {
     window.addEventListener('online', guiCho);
   }
 
+  function docLinkNV(t) {
+    var m = /[?&]may=([^&\s]+)/.exec(String(t || '')); if (!m) return null;
+    var c = /[?&]ma=([^&\s]+)/.exec(t);
+    try { return { may: decodeURIComponent(m[1]), ma: c ? decodeURIComponent(c[1]) : '' }; } catch (e) { return null; }
+  }
   function veDN(loi) {
     $app('<div class="hdr"><h1>Chấm công</h1></div><div class="card pad"><h2 style="margin:4px 0 6px;font-size:20px">Đăng nhập nhân viên</h2>' +
-      (may() ? '' : '<p class="red">Link cài chưa đúng. Hãy xin quản lý gửi lại link cài app.</p>') +
+      (may() ? '' : '<p class="muted" style="margin:0 0 4px">Dán link cài app mà quản lý gửi cho anh/chị qua Zalo:</p><textarea id="dnLink" rows="3" style="width:100%;box-sizing:border-box;font-size:15px;border:1px solid var(--line);border-radius:10px;padding:8px" placeholder="https://…?nv=1&may=…"></textarea>') +
       '<div class="sheet" style="padding:0;max-height:none;animation:none"><label>Mã nhân viên</label><input id="dnMa" autocapitalize="characters" value="' + esc(lsGet('cc_nv_ma_goiy') || '') + '" placeholder="VD: NV01">' +
       '<label>Mã PIN</label><input id="dnPin" type="password" inputmode="numeric" placeholder="••••"></div>' +
       '<button class="btn p" style="width:100%;margin-top:16px" id="dnOk">Đăng nhập</button>' +
       (loi ? '<p class="red" style="margin-bottom:0">' + esc(loi) + '</p>' : '') + '</div>' +
-      '<p class="muted" style="text-align:center;font-size:13px">Lần đầu đăng nhập cần có mạng.</p>');
+      '<p class="muted" style="text-align:center;font-size:13px">Lần đầu đăng nhập cần có mạng.</p>' +
+      (NATIVE ? '<p style="text-align:center"><button class="btn gray" onclick="doiVaiTro()">← Tôi là quản lý</button></p>' : ''));
     $bottom('');
     document.getElementById('dnOk').onclick = function () {
       var ma = document.getElementById('dnMa').value.trim().toUpperCase(), pin = document.getElementById('dnPin').value.trim();
+      var $l = document.getElementById('dnLink');
+      if ($l) {
+        var lk = docLinkNV($l.value);
+        if (!lk) return veDN('Link không đúng. Hãy copy nguyên link quản lý gửi.');
+        lsSet('cc_nv_may', lk.may); if (lk.ma) lsSet('cc_nv_ma_goiy', lk.ma); if (!ma) ma = lk.ma.toUpperCase();
+      }
       if (!ma || !pin) return veDN('Nhập mã nhân viên và mã PIN');
       this.disabled = true; this.textContent = 'Đang đăng nhập…';
       goiMay(may(), { action: 'nvDangNhap', ma: ma, pin: pin }, 30000).then(function (r) {
@@ -1042,15 +1084,15 @@ var NV = (function () {
     return s;
   }
   function batGPS() {
-    if (!navigator.geolocation || gps === 'xem') return;
+    if (!GEO || gps === 'xem') return;
     gps = 'xem';
-    navigator.geolocation.watchPosition(function (p) { vt = { lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy, t: Date.now() }; var e = document.getElementById('nvGps'); if (e) e.innerHTML = chuGPS(); },
+    GEO.watchPosition(function (p) { vt = { lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy, t: Date.now() }; var e = document.getElementById('nvGps'); if (e) e.innerHTML = chuGPS(); },
       function () { vt = null; gps = 'loi'; var e = document.getElementById('nvGps'); if (e) e.innerHTML = chuGPS(); }, { enableHighAccuracy: true, maximumAge: 15000, timeout: 30000 });
   }
   function layViTri(cb) {
     if (vt && Date.now() - vt.t < 30000 && vt.acc < 100) return cb(vt);
-    if (!navigator.geolocation) return cb(null);
-    navigator.geolocation.getCurrentPosition(function (p) { vt = { lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy, t: Date.now() }; cb(vt); },
+    if (!GEO) return cb(null);
+    GEO.getCurrentPosition(function (p) { vt = { lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy, t: Date.now() }; cb(vt); },
       function () { cb(vt && Date.now() - vt.t < 120000 ? vt : null); }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
   }
 
@@ -1195,7 +1237,7 @@ var KHOA = (function () {
 })();
 
 /* ======================= THÔNG TIN PHẦN MỀM ======================= */
-var PHIEN_BAN = '1.0.1', NGAY_PB = '24/11/2026', HOTLINE = '0911337373';
+var PHIEN_BAN = '1.0.2', NGAY_PB = '24/11/2026', HOTLINE = '0911337373';
 function moThongTin() {
   var la = VAI === 'nv', kb = 0;
   try { kb = ((lsGet(KEY) || '').length / 1024).toFixed(1).replace('.', ','); } catch (e) {}
@@ -1218,24 +1260,38 @@ function moThongTin() {
       dong('Mật khẩu mở app', KHOA.coKhoa() ? 'Đang bật ✓' : 'Chưa đặt')) +
     dong('Mạng', navigator.onLine === false ? '<span class="red">Đang mất mạng</span>' : 'Có mạng') + '</div>' +
     (la ? '' : '<p class="muted" style="font-size:13px">Dữ liệu lưu trong máy này' + (db.cfg.mayChu ? ' và trong Google Drive của anh' : '') + '. Nên vào ⚙️ › Lưu ra file để sao lưu định kỳ.</p>') +
+    '<p style="text-align:center;margin:14px 0 0"><a href="' + WEB_URL.replace('index.html', 'chinh-sach.html') + '" target="_blank" rel="noopener">Chính sách quyền riêng tư</a></p>' +
     '<p class="muted" style="font-size:12px;text-align:center;margin:16px 0 0">© 2026 MachTech · Lịch âm theo thuật toán Hồ Ngọc Đức · Xuất Excel bằng SheetJS</p>' +
     '<div class="btns"><button class="btn gray" onclick="dongSheet()">Đóng</button></div>');
 }
 
+/* Màn hình chọn vai trò khi mở app App Store lần đầu */
+function chonVaiTro() {
+  document.getElementById('app').innerHTML = '<div class="hdr"><h1>Chấm Công MachTech</h1></div>' +
+    '<div class="card pad" style="text-align:center"><p style="font-size:17px;margin-top:4px">Anh/chị dùng app với vai trò nào?</p>' +
+    '<button class="btn p" style="width:100%;padding:18px 0;font-size:19px" onclick="datVaiTro(\'ql\')">👔 Chủ / quản lý<br><small style="font-weight:400">Chấm công, tính lương, thu chi công trình</small></button>' +
+    '<button class="btn g" style="width:100%;padding:18px 0;font-size:19px;margin-top:12px" onclick="datVaiTro(\'nv\')">👷 Nhân viên<br><small style="font-weight:400">Tự chấm vào ca / ra ca tại công trình</small></button>' +
+    '<p class="muted" style="font-size:13px;margin-bottom:0">Dữ liệu lưu trong máy, dùng được khi không có mạng.</p></div>';
+}
+function datVaiTro(v) { lsSet('cc_vai', v); location.reload(); }
+function doiVaiTro() { try { localStorage.removeItem('cc_vai'); } catch (e) {} location.reload(); }
+
 /* ======================= KHỞI ĐỘNG ======================= */
 var Q = new URLSearchParams(location.search);
 if (Q.get('nv')) { lsSet('cc_vai', 'nv'); if (Q.get('may')) lsSet('cc_nv_may', Q.get('may')); if (Q.get('ma')) lsSet('cc_nv_ma_goiy', Q.get('ma')); }
-var VAI = lsGet('cc_vai') || 'ql';
+var VAI = lsGet('cc_vai') || (NATIVE ? '' : 'ql');
 var ngayDangXem = homNay();
 document.addEventListener('visibilitychange', function () {
   if (document.visibilityState !== 'visible') return;
   if (homNay() !== ngayDangXem) { ngayDangXem = homNay(); S.th = thangNay(); }
+  if (!VAI) return;
   if (VAI === 'nv') return NV.lamMoi();
   if (db.cfg.mayChu) dongBo(true);
   if (!document.querySelector('.ov') && !document.getElementById('manKhoa')) ve();
 });
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(function () {});
-if (VAI === 'nv') NV.batDau();
+if (NATIVE && !lsGet('cc_vai')) chonVaiTro();
+else if (VAI === 'nv') NV.batDau();
 else {
   if (KHOA.coKhoa()) KHOA.khoa(function () { ve(); }); else ve();
   if (db.cfg.mayChu) dongBo(true);
