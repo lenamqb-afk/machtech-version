@@ -338,7 +338,7 @@ function veTab(on) {
   if (!on || VAI !== 'ql') { t.style.display = 'none'; document.body.classList.remove('cotab'); return; }
   t.style.display = ''; document.body.classList.add('cotab');
   t.innerHTML = [['home', '🏗️', 'Công trình'], ['dsnv', '👷', 'Nhân viên'], ['tongtc', '💰', 'Thu chi'], ['cd', '⚙️', 'Cài đặt']].map(function (x) {
-    return '<button class="' + (x[0] === on ? 'on' : '') + '" onclick="' + (x[0] === 'cd' ? 'moCaiDat()' : 'di(\'' + (x[0] === 'home' ? '' : x[0]) + '\')') + '"><i>' + x[1] + '</i>' + x[2] + '</button>';
+    return '<button class="' + (x[0] === on ? 'on' : '') + '" onclick="' + (x[0] === 'cd' ? 'moCaiDat()' : 'TTC.ct=\'\';di(\'' + (x[0] === 'home' ? '' : x[0]) + '\');ve()') + '"><i>' + x[1] + '</i>' + x[2] + '</button>';
   }).join('');
 }
 /* ---------- Tab Nhân viên: quản lý tất cả nhân viên ---------- */
@@ -375,12 +375,18 @@ function veDSNV() {
   $bottom(nds.length ? '<button class="fab" onclick="suaNV(null,\'' + (DSNV.nhom || nds[0].id) + '\')">＋</button>' : '', true);
 }
 /* ---------- Tab Thu chi: tổng hợp mọi công trình ---------- */
-var TTC = { nguon: '' };
+var TTC = { nguon: '', ct: '' };
 function veTongTC() {
+  var G = TTC.ct && timNhom(TTC.ct);
+  if (G && !G.xoa) {
+    $app('<div class="hdr"><button class="ic back" onclick="TTC.ct=\'\';ve()">‹</button><h1>' + esc(G.ten) + '</h1>' + nutMat() + '</div>' + veThuChi(G));
+    $bottom(''); return;
+  }
+  TTC.ct = '';
   var nds = nhomDS(), T = { hopDong: 0, thu: 0, tongChi: 0, lai: 0, dangGiu: 0 };
   var dong = nds.map(function (g) {
     var r = tinhCT(g); ['hopDong', 'thu', 'tongChi', 'lai', 'dangGiu'].forEach(function (k) { T[k] += r[k] || 0; });
-    return '<button class="grp" onclick="S.tab=\'tc\';di(\'nhom/' + g.id + '\')"><div class="t"><b>' + esc(g.ten) + '</b>' + (r.td !== null ? '<div style="margin:6px 0 2px">' + thanhTD(r.td, 'var(--blue)') + '</div>' : '') +
+    return '<button class="grp" onclick="TTC.ct=\'' + g.id + '\';ve();window.scrollTo(0,0)"><div class="t"><b>' + esc(g.ten) + '</b>' + (r.td !== null ? '<div style="margin:6px 0 2px">' + thanhTD(r.td, 'var(--blue)') + '</div>' : '') +
       '<small>' + (r.td !== null ? 'Tiến độ ' + Math.round(r.td) + '% · ' : '') + 'Thu ' + tienGon(r.thu) + (r.hopDong ? '/' + tienGon(r.hopDong) : '') + ' · Chi ' + tienGon(r.tongChi) + (r.dangGiu > 0 ? ' · ứng VT ' + tienGon(r.dangGiu) : '') + '</small></div>' +
       '<div style="text-align:right;flex:none"><b class="' + (r.lai < 0 ? 'red' : 'green') + '">' + (db.cfg.an ? '***' : tienGon(r.lai)) + '</b><br><small class="muted">lãi tạm</small></div></button>';
   });
@@ -417,7 +423,7 @@ function veTongTC() {
     '<div class="sec"><h3>TỔNG HỢP CÔNG TRÌNH</h3></div>' +
     '<div class="card">' + (T.hopDong ? kv('Tổng giá trị hợp đồng', tien(T.hopDong), 'blue') : '') + kv('Đã thu', tien(T.thu), 'green') + kv('Tổng chi phí (cả tiền công)', tienAn(T.tongChi), 'red') +
     '<div class="dash"></div>' + kv('<b>Lãi tạm tính</b>', db.cfg.an ? '*,***,*** đ' : tien(T.lai), T.lai < 0 ? 'red' : 'green') + (T.dangGiu > 0 ? kv('Tạm ứng vật tư đang giữ', tien(T.dangGiu), 'red') : '') + '</div>' +
-    '<div class="sec"><h3>THEO CÔNG TRÌNH</h3></div><div class="card list">' + (dong.length ? dong.join('<div class="dash"></div>') : '<div class="empty">Chưa có công trình.</div>') + '</div>' +
+    '<div class="sec"><h3>THEO CÔNG TRÌNH</h3><small class="muted">bấm để xem thu chi, ứng VT</small></div><div class="card list">' + (dong.length ? dong.join('<div class="dash"></div>') : '<div class="empty">Chưa có công trình.</div>') + '</div>' +
     '<button class="btn gray" style="width:100%" onclick="moDanhMuc()">🗂️ Hạng mục thu chi</button>');
   $bottom('');
 }
@@ -442,6 +448,7 @@ function nutMat() { return '<button class="ic" style="width:36px;height:36px;box
 
 /* ---------- Trang nhóm ---------- */
 function veNhom(g) {
+  if (S.tab === 'tc') S.tab = 'cham';
   var ds = nvCua(g.id), dsAll = nvCua(g.id, true), th = S.th, hn = homNay();
   var T = { luong: 0, tangca: 0, phucap: 0, ung: 0, tru: 0, thanhtoan: 0, tong: 0, conLai: 0 }, tongCon = 0, daCham = 0;
   ds.forEach(function (n) { cong(T, tinh(n, th)); tongCon += tinh(n, null).conLai; if (getCong(n.id, hn)) daCham++; });
@@ -465,21 +472,18 @@ function veNhom(g) {
     '<button class="act" onclick="chamCaNhom(\'' + g.id + '\')"><i>☑️</i>Chấm nhanh</button>' +
     '<button class="act" onclick="xuatExcel(\'' + g.id + '\')"><i>📊</i>Xuất Excel</button>' +
     '<button class="act" onclick="S.tab=\'dc\';ve()"><i>🔍</i>Đối chiếu</button>' +
-    '<button class="act" onclick="moTC(\'' + g.id + '\',\'thu\')"><i>💰</i>Thu tiền</button>' +
-    '<button class="act" onclick="moTC(\'' + g.id + '\',\'chi\')"><i>🧾</i>Chi tiền</button>' +
-    '<button class="act" onclick="moTC(\'' + g.id + '\',\'ungvt\')"><i>🤝</i>Ứng mua VT</button>' +
     '<button class="act" onclick="S.tab=\'td\';ve()"><i>📈</i>Tiến độ</button></div></div>' +
-    (S.tab === 'tc' || S.tab === 'td' ? '' : (
+    (S.tab === 'td' ? '' : (
     '<div class="card"><div class="kv"><b class="blue" style="font-size:20px">Tiền Công Tháng ' + +th.slice(5) + (th.slice(0, 4) != new Date().getFullYear() ? '/' + th.slice(0, 4) : '') + '</b><span style="display:flex;gap:6px"><button class="ic back" style="font-size:26px" onclick="S.th=themThang(S.th,-1);ve()">‹</button><button class="ic back" style="font-size:26px" onclick="S.th=themThang(S.th,1);ve()">›</button></span></div>' +
     '<div class="dash"></div><div class="kv"><span>Tổng tiền công</span><b class="blue">' + tienAn(T.tong) + '</b></div><div class="dash"></div><div class="kv"><span>Tổng đã ứng</span><b class="red">' + tien(T.ung) + '</b></div>' +
     (S.chiTiet ? '<div class="dash"></div><div class="kv"><span>Lương ngày công</span><b>' + tienAn(T.luong) + '</b></div><div class="dash"></div><div class="kv"><span>Tăng ca</span><b>' + tien(T.tangca) + '</b></div><div class="dash"></div><div class="kv"><span>Phụ cấp</span><b>' + tien(T.phucap) + '</b></div><div class="dash"></div><div class="kv"><span>Trừ tiền</span><b class="red">' + tien(T.tru) + '</b></div><div class="dash"></div><div class="kv"><span>Đã thanh toán</span><b class="red">' + tien(T.thanhtoan) + '</b></div><div class="dash"></div><div class="kv"><span>Chưa nhận (tháng này)</span><b>' + tienAn(T.conLai) + '</b></div>' : '') +
     '<button class="pill" onclick="S.chiTiet=!S.chiTiet;ve()">' + (S.chiTiet ? 'Thu gọn ⌃' : 'Xem chi tiết ⌄') + '</button></div>')) +
-    '<div class="seg">' + [['cham', 'Chấm'], ['dc', 'Đối chiếu'], ['tq', 'Bảng'], ['tc', 'Thu chi'], ['td', 'Tiến độ']].map(function (t) { return '<button class="' + (S.tab === t[0] ? 'on' : '') + '" onclick="S.tab=\'' + t[0] + '\';ve()">' + t[1] + '</button>'; }).join('') + '</div>' +
+    '<div class="seg">' + [['cham', 'Chấm'], ['dc', 'Đối chiếu'], ['tq', 'Bảng'], ['td', 'Tiến độ']].map(function (t) { return '<button class="' + (S.tab === t[0] ? 'on' : '') + '" onclick="S.tab=\'' + t[0] + '\';ve()">' + t[1] + '</button>'; }).join('') + '</div>' +
     (S.tab === 'cham' ?
       '<div class="sec"><h3>ĐÃ CHẤM CÔNG ' + daCham + '/' + ds.length + '</h3><input class="search" placeholder="Tìm kiếm 🔍" value="' + esc(S.tim) + '" oninput="S.tim=this.value;veTim()"></div><div id="dsNV">' +
       (the.join('') || '<div class="card empty">Chưa có nhân viên. Bấm “Thêm NV”.</div>') + '</div>' +
       (tam.length ? '<div class="sec"><h3 class="muted">TẠM NGỪNG (' + tam.length + ')</h3></div><div class="card list">' + tam.map(function (n) { return '<div class="it" onclick="di(\'nv/' + n.id + '\')"><div class="t">' + esc(n.ten) + '</div><span class="muted">›</span></div>'; }).join('') + '</div>' : '')
-      : S.tab === 'dc' ? veDoiChieu(ds, th) : S.tab === 'tc' ? veThuChi(g) : S.tab === 'td' ? veTienDo(g) : veTongQuan(ds, th)));
+      : S.tab === 'dc' ? veDoiChieu(ds, th) : S.tab === 'td' ? veTienDo(g) : veTongQuan(ds, th)));
   $bottom('');
 }
 function veTim() { var v = S.tim; ve(); var e = document.querySelector('.search'); if (e) { e.focus(); e.setSelectionRange(v.length, v.length); } }
@@ -1006,7 +1010,7 @@ function moTC(gid, loai, id, mac) {
     if (loai === 'chi') { o.ncc = document.getElementById('tcNcc').value.trim(); o.tuUng = document.getElementById('tcTuUng').value; }
     if ($s) { if ($s.value === 'x:') { o.nguoiNV = ''; o.nguoiTen = document.getElementById('tcNguoiTen').value.trim(); if (!o.nguoiTen) return toast('Ghi tên người nhận'); } else { o.nguoiNV = $s.value; o.nguoiTen = ''; } }
     o.upd = now(); db.tc = db.tc || []; if (!x) db.tc.push(o);
-    luu(); dongSheet(); toast('✓ Đã lưu ' + L.ten.toLowerCase()); if (route().v === 'nhom') S.tab = 'tc'; ve();
+    luu(); dongSheet(); toast('✓ Đã lưu ' + L.ten.toLowerCase()); ve();
   };
   if (x) document.getElementById('tcXoa').onclick = function () { if (!confirm('Xóa khoản này?')) return; x.xoa = 1; x.upd = now(); luu(); dongSheet(); ve(); };
 }
@@ -1658,7 +1662,7 @@ var KHOA = (function () {
 })();
 
 /* ======================= THÔNG TIN PHẦN MỀM ======================= */
-var PHIEN_BAN = '1.0.11', NGAY_PB = '24/11/2026', HOTLINE = '0911337373';
+var PHIEN_BAN = '1.0.12', NGAY_PB = '24/11/2026', HOTLINE = '0911337373';
 function moThongTin() {
   var la = VAI === 'nv', kb = 0;
   try { kb = ((lsGet(KEY) || '').length / 1024).toFixed(1).replace('.', ','); } catch (e) {}
