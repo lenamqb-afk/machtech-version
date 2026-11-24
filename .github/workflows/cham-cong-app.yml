@@ -15,7 +15,9 @@ on:
     branches: [cham-cong, claude/project-thread-h8p7vn]
     paths: ['cham-cong/**', 'app-store/**', '.github/workflows/cham-cong-app.yml']
 
-concurrency: { group: cham-cong-app-${{ github.ref }}, cancel-in-progress: true }
+concurrency:
+  group: cham-cong-app-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   ios:
