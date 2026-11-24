@@ -157,7 +157,7 @@ function lsSet(k, v) { try { localStorage.setItem(k, v); return true; } catch (e
 var NATIVE = !!(window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform());
 var WEB_URL = 'https://raw.githack.com/lenamqb-afk/machtech-version/cham-cong/cham-cong/index.html';
 var CP = {};
-if (NATIVE && window.capacitorExports) ['Geolocation', 'Share', 'Filesystem'].forEach(function (n) { CP[n] = capacitorExports.registerPlugin(n); });
+if (NATIVE && window.capacitorExports) ['Geolocation', 'Share', 'Filesystem', 'LocalNotifications'].forEach(function (n) { CP[n] = capacitorExports.registerPlugin(n); });
 /* Định vị: trong app dùng GPS gốc của máy, trên web dùng trình duyệt */
 var GEO = !NATIVE ? navigator.geolocation : {
   getCurrentPosition: function (ok, loi, o) {
@@ -192,6 +192,7 @@ function luu() {
   ccMap = null;
   if (!lsSet(KEY, JSON.stringify(db))) toast('Không lưu được dữ liệu trên máy!');
   if (db.cfg.mayChu) { clearTimeout(hen); hen = setTimeout(function () { dongBo(true); }, 2500); }
+  if (window.NHAC) NHAC.henLap();
 }
 var nhomDS = function () { return db.nhom.filter(function (x) { return !x.xoa; }); };
 var nvCua = function (nhomId, caTamNgung) { return db.nv.filter(function (x) { return !x.xoa && x.nhomId === nhomId && (caTamNgung || !x.tamNgung); }); };
@@ -877,6 +878,7 @@ function tamNgung(id) { var n = timNV(id); n.tamNgung = !n.tamNgung; n.upd = now
 function moCaiDat() {
   sheet('<h2>⚙️ Cài đặt</h2>' +
     '<button class="btn gray" style="width:100%;margin-bottom:10px" onclick="dongSheet();moThongTin()">ⓘ Thông tin phần mềm, hỗ trợ</button>' +
+    '<button class="btn gray" style="width:100%;margin-bottom:10px" onclick="dongSheet();NHAC.moCaiDat()">🔔 Nhắc chấm công hằng ngày: ' + NHAC.nhan() + '</button>' +
     '<button class="btn ' + (KHOA.coKhoa() ? 'gray' : 'p') + '" style="width:100%" onclick="dongSheet();KHOA.caiDat()">🔒 Mật khẩu mở app: ' + (KHOA.coKhoa() ? 'đang bật' : 'chưa đặt') + '</button>' +
     '<label>Sao lưu dữ liệu</label><div class="row"><button class="btn gray" onclick="saoLuu()">💾 Lưu ra file</button><button class="btn gray" onclick="document.getElementById(\'fileKP\').click()">📂 Khôi phục</button></div><input type="file" id="fileKP" accept=".json,application/json" style="display:none" onchange="khoiPhuc(this.files[0])">' +
     '<h2 style="margin-top:22px">☁️ Đồng bộ nhiều máy (Google, miễn phí)</h2><p class="muted" style="margin-top:-6px;font-size:14px">Dán địa chỉ máy chủ Google Apps Script (xem hướng dẫn). Mọi iPhone dùng cùng địa chỉ + mã bí mật sẽ thấy cùng dữ liệu.</p>' +
@@ -1100,7 +1102,7 @@ var NV = (function () {
     var b = document.getElementById('nvCham'), nv = phien.nv;
     b.disabled = true; b.textContent = 'Đang lấy vị trí…';
     layViTri(function (v) {
-      var bao = function (ok, t) { msg = [ok, t]; veChinh(); if (ok && navigator.vibrate) navigator.vibrate(80); };
+      var bao = function (ok, t) { msg = [ok, t]; veChinh(); if (ok && navigator.vibrate) navigator.vibrate(80); if (ok) NHAC.henLap(); };
       if (coToaDo(nv)) {
         if (!v) return bao(false, 'Không lấy được vị trí. Bật Dịch vụ định vị (Cài đặt › Quyền riêng tư › Dịch vụ định vị) rồi thử lại.');
         var k = Math.round(kcach(v.lat, v.lng, +nv.viDo, +nv.kinhDo));
@@ -1144,6 +1146,7 @@ var NV = (function () {
   function menu() {
     sheet('<h2>' + esc(phien.nv.ten) + '</h2><p class="muted">Mã ' + esc(phien.ma) + (phien.nv.nhom ? ' · ' + esc(phien.nv.nhom) : '') + (coToaDo(phien.nv) ? '<br>Bán kính chấm công: ' + phien.nv.banKinh + ' m' : '') + '</p>' +
       '<button class="btn gray" style="width:100%" onclick="dongSheet();NV.lamMoi()">🔄 Làm mới</button>' +
+      '<button class="btn gray" style="width:100%;margin-top:10px" onclick="dongSheet();NHAC.moCaiDat()">🔔 Nhắc chấm công: ' + NHAC.nhan() + '</button>' +
       '<button class="btn gray" style="width:100%;margin-top:10px" onclick="dongSheet();moThongTin()">ⓘ Thông tin phần mềm, hỗ trợ</button>' +
       '<button class="btn red" style="width:100%;margin-top:10px" id="dxOk">Đăng xuất</button>');
     document.getElementById('dxOk').onclick = function () {
@@ -1151,7 +1154,12 @@ var NV = (function () {
       dongSheet(); dangXuat();
     };
   }
-  return { batDau: batDau, cham: cham, lamMoi: lamMoi, menu: menu, thang: function (d) { th = themThang(th, d); msg = null; veChinh(); taiLS(); } };
+  function daCham() {
+    if (!phien) return null;
+    var cc = homNayCC().filter(function (x) { return x.ok !== false; });
+    return { vao: cc.some(function (x) { return x.loai === 'VAO'; }), ra: cc.some(function (x) { return x.loai === 'RA'; }) };
+  }
+  return { daCham: daCham, batDau: batDau, cham: cham, lamMoi: lamMoi, menu: menu, thang: function (d) { th = themThang(th, d); msg = null; veChinh(); taiLS(); } };
 })();
 
 /* ======================= MẬT KHẨU MỞ APP (máy quản lý) ======================= */
@@ -1237,7 +1245,7 @@ var KHOA = (function () {
 })();
 
 /* ======================= THÔNG TIN PHẦN MỀM ======================= */
-var PHIEN_BAN = '1.0.3', NGAY_PB = '24/11/2026', HOTLINE = '0911337373';
+var PHIEN_BAN = '1.0.4', NGAY_PB = '24/11/2026', HOTLINE = '0911337373';
 function moThongTin() {
   var la = VAI === 'nv', kb = 0;
   try { kb = ((lsGet(KEY) || '').length / 1024).toFixed(1).replace('.', ','); } catch (e) {}
@@ -1265,6 +1273,87 @@ function moThongTin() {
     '<div class="btns"><button class="btn gray" onclick="dongSheet()">Đóng</button></div>');
 }
 
+
+/* ======================= NHẮC CHẤM CÔNG HẰNG NGÀY ======================= */
+/* Thông báo trên máy (không cần mạng, không cần máy chủ). Lập lịch 14 ngày tới,
+   tự bỏ nhắc hôm nay nếu đã chấm xong; lập lại mỗi lần mở app hoặc chấm công. */
+var NHAC = (function () {
+  var K = 'cc_nhac', ID0 = 7000, SO_NGAY = 14, hen = null;
+  function cfg() { var d = { bat: false, ql: '17:00', vao: '07:00', ra: '17:00', cn: false }; try { return Object.assign(d, JSON.parse(lsGet(K)) || {}); } catch (e) { return d; } }
+  function ghiCfg(c) { lsSet(K, JSON.stringify(c)); }
+  var LN = function () { return CP.LocalNotifications; };
+  function luc(ngay, hhmm) { var a = hhmm.split(':'); var d = new Date(ngay); d.setHours(+a[0], +a[1], 0, 0); return d; }
+  function qlConThieu() {
+    var hn = homNay();
+    return db.nv.filter(function (n) { return !n.xoa && !n.tamNgung && timNhom(n.nhomId); }).filter(function (n) { return !getCong(n.id, hn); }).length;
+  }
+  function dsThongBao() {
+    var c = cfg(), vai = lsGet('cc_vai') || (NATIVE ? '' : 'ql'), ds = [], bayGio = Date.now();
+    if (!c.bat || !vai) return ds;
+    var dc = vai === 'nv' && NV.daCham ? NV.daCham() : null;
+    if (vai === 'nv' && !dc) return ds;  // nhân viên chưa đăng nhập
+    for (var i = 0; i < SO_NGAY; i++) {
+      var ngay = new Date(); ngay.setDate(ngay.getDate() + i);
+      if (!c.cn && ngay.getDay() === 0) continue;
+      var homnay = i === 0;
+      if (vai === 'ql') {
+        var at = luc(ngay, c.ql);
+        if (at <= bayGio) continue;
+        if (homnay) { var thieu = qlConThieu(); if (!thieu) continue; }
+        ds.push({ id: ID0 + i * 2, title: '⏰ Chấm công hôm nay', body: homnay ? 'Còn ' + thieu + ' người chưa chấm công hôm nay. Bấm để chấm.' : 'Đến giờ chấm công cho thợ. Bấm để mở app chấm.', schedule: { at: at, allowWhileIdle: true } });
+      } else {
+        var a1 = luc(ngay, c.vao), a2 = luc(ngay, c.ra);
+        if (a1 > bayGio && !(homnay && dc.vao)) ds.push({ id: ID0 + i * 2, title: '👷 Nhớ VÀO CA', body: 'Tới công trình thì mở app bấm VÀO CA nhé.', schedule: { at: a1, allowWhileIdle: true } });
+        if (a2 > bayGio && !(homnay && dc.ra)) ds.push({ id: ID0 + i * 2 + 1, title: '🏠 Nhớ RA CA', body: 'Trước khi về nhớ bấm RA CA để tính đủ công.', schedule: { at: a2, allowWhileIdle: true } });
+      }
+    }
+    return ds;
+  }
+  function huyHet() {
+    var ids = []; for (var i = 0; i < SO_NGAY * 2; i++) ids.push({ id: ID0 + i });
+    return LN().cancel({ notifications: ids }).catch(function () {});
+  }
+  function lap() {
+    if (!NATIVE || !LN()) return Promise.resolve();
+    return huyHet().then(function () {
+      var ds = dsThongBao(); if (!ds.length) return;
+      return LN().schedule({ notifications: ds });
+    }).catch(function () {});
+  }
+  function henLap() { if (!NATIVE) return; clearTimeout(hen); hen = setTimeout(lap, 1500); }
+  function xinQuyen() {
+    if (!NATIVE || !LN()) return Promise.resolve(false);
+    return LN().requestPermissions().then(function (r) { return r && r.display === 'granted'; }, function () { return false; });
+  }
+  function moCaiDat() {
+    var c = cfg(), nv = lsGet('cc_vai') === 'nv';
+    var o = function (id, nhan, v) { return '<label>' + nhan + '</label><input id="' + id + '" type="time" value="' + v + '">'; };
+    sheet('<h2>🔔 Nhắc chấm công hằng ngày</h2>' +
+      (NATIVE ? '' : '<p class="red" style="font-size:14px">Nhắc bằng thông báo chỉ có trên app tải từ App Store / Google Play. Bản mở bằng trình duyệt không gửi được thông báo khi đang đóng.</p>') +
+      '<p class="muted" style="margin-top:-4px;font-size:14px">' + (nv ? 'Điện thoại sẽ nhắc anh/chị bấm VÀO CA và RA CA. Ngày đã chấm thì không nhắc nữa.' : 'Điện thoại nhắc anh chấm công cho thợ. Hôm nào đã chấm đủ mọi người thì không nhắc.') + '</p>' +
+      '<label style="display:flex;align-items:center;gap:10px;font-size:17px;color:inherit"><input id="nhBat" type="checkbox" style="width:24px;height:24px"' + (c.bat ? ' checked' : '') + '> Bật nhắc</label>' +
+      (nv ? '<div class="row"><div style="flex:1">' + o('nhVao', 'Giờ nhắc vào ca', c.vao) + '</div><div style="flex:1">' + o('nhRa', 'Giờ nhắc ra ca', c.ra) + '</div></div>' : o('nhQl', 'Giờ nhắc', c.ql)) +
+      '<label style="display:flex;align-items:center;gap:10px;color:inherit"><input id="nhCn" type="checkbox" style="width:22px;height:22px"' + (c.cn ? ' checked' : '') + '> Nhắc cả Chủ nhật</label>' +
+      '<p id="nhMsg" class="muted" style="font-size:14px"></p>' +
+      '<div class="btns"><button class="btn gray" onclick="dongSheet()">Đóng</button><button class="btn p" id="nhLuu">Lưu</button></div>');
+    document.getElementById('nhLuu').onclick = function () {
+      var g = function (id) { var e = document.getElementById(id); return e && e.value; };
+      c.bat = document.getElementById('nhBat').checked; c.cn = document.getElementById('nhCn').checked;
+      if (nv) { c.vao = g('nhVao') || c.vao; c.ra = g('nhRa') || c.ra; } else c.ql = g('nhQl') || c.ql;
+      ghiCfg(c);
+      if (!c.bat) { lap(); dongSheet(); return toast('Đã tắt nhắc'); }
+      if (!NATIVE) { dongSheet(); return toast('Đã lưu (chỉ nhắc trên app App Store)'); }
+      xinQuyen().then(function (ok) {
+        if (!ok) { document.getElementById('nhMsg').innerHTML = '<span class="red">Máy chưa cho phép thông báo. Vào Cài đặt › Thông báo › Chấm Công › bật Cho phép thông báo, rồi bấm Lưu lại.</span>'; return; }
+        lap().then(function () { dongSheet(); toast('✓ Sẽ nhắc ' + (nv ? 'lúc ' + c.vao + ' và ' + c.ra : 'lúc ' + c.ql) + ' mỗi ngày'); ve2(); });
+      });
+    };
+  }
+  function ve2() { if (lsGet('cc_vai') === 'nv') { if (NV.lamMoi) NV.lamMoi(); } else if (typeof ve === 'function') ve(); }
+  function nhan() { var c = cfg(); return c.bat ? (lsGet('cc_vai') === 'nv' ? c.vao + ' · ' + c.ra : c.ql) : 'đang tắt'; }
+  return { lap: lap, henLap: henLap, moCaiDat: moCaiDat, nhan: nhan };
+})();
+
 /* Màn hình chọn vai trò khi mở app App Store lần đầu */
 function chonVaiTro() {
   document.getElementById('app').innerHTML = '<div class="hdr"><h1>Chấm Công Tính Lương</h1></div>' +
@@ -1285,11 +1374,13 @@ document.addEventListener('visibilitychange', function () {
   if (document.visibilityState !== 'visible') return;
   if (homNay() !== ngayDangXem) { ngayDangXem = homNay(); S.th = thangNay(); }
   if (!VAI) return;
+  NHAC.henLap();
   if (VAI === 'nv') return NV.lamMoi();
   if (db.cfg.mayChu) dongBo(true);
   if (!document.querySelector('.ov') && !document.getElementById('manKhoa')) ve();
 });
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(function () {});
+if (VAI) NHAC.henLap();
 if (NATIVE && !lsGet('cc_vai')) chonVaiTro();
 else if (VAI === 'nv') NV.batDau();
 else {
