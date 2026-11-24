@@ -1,4 +1,4 @@
 {
   "machtech": { "version": "1.0.7", "note": "Báo có bản mới bằng hộp thông báo; sửa chờ máy dừng hẳn khi đo dao.", "url": "" },
-  "robot":    { "version": "1.0.9", "note": "T0 = mỏ hàn: nhớ TCP mỏ hàn riêng, hiện mỏ hàn khi không lắp dao.", "url": "" }
+  "robot":    { "version": "1.0.10", "note": "Cổ mỏ hàn cong một chỗ như mỏ thật.", "url": "" }
 }
